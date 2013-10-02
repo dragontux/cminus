@@ -1,0 +1,48 @@
+// From web.cs.swarthmore.edu
+CS75: Compiler Construction, Spring 2007
+C-- Programming Language Specification
+
+Program			−→ 	VarDeclList FunDeclList
+VarDeclList		−→ 	VarDecl VarDeclList
+VarDecl			−→ 	Type id ;
+				Type id [ num ] ;
+FunDeclList		−→	FunDecl
+				FunDecl FunDeclList
+FunDecl			−→	Type id ( ParamDeclList ) Block
+ParamDeclList		−→	[none]
+				ParamDeclListTail
+ParamDeclListTail	−→	ParamDecl
+				ParamDecl, ParamDeclListTail
+ParamDecl		−→	Type id
+				Type id []
+Block			−→	{ VarDeclList StmtList }
+Type			−→	int
+				char
+StmtList		−→	Stmt
+				Stmt StmtList
+Stmt			−→	;
+				Expr ;
+				return Expr ;
+				read id ;
+				write Expr ;
+				writeln ;
+				break ;
+				if ( Expr ) Stmt else Stmt
+				while ( Expr ) Stmt
+				Block
+Expr			−→	Primary
+				UnaryOp Expr
+				Expr BinOp Expr
+				id = Expr
+				id [ Expr ] = Expr
+Primary			−→	id
+				num
+				( Expr )
+				id ( ExprList )
+				id [ Expr ]
+ExprList		−→	[none]
+				ExprListTail
+ExprListTail		−→	Expr
+				Expr, ExprListTail
+UnaryOp			−→	− | !
+BinOp			−→ 	+|−|*|/|==|!=|<|<=|>|>=&&|||
