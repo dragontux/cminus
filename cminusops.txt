@@ -3,7 +3,8 @@ CS75: Compiler Construction, Spring 2007
 C-- Programming Language Specification
 
 Program			−→ 	VarDeclList FunDeclList
-VarDeclList		−→ 	VarDecl VarDeclList
+VarDeclList		−→ 	[none]
+				VarDecl VarDeclList
 VarDecl			−→ 	Type id ;
 				Type id [ num ] ;
 FunDeclList		−→	FunDecl

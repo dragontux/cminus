@@ -30,21 +30,21 @@
  */
 
 #include "parse.h"
+extern char *debug_strings[];
 
 parse_node_t *parse_tokens( parse_node_t *tokens ){
 	parse_node_t *token_list = tokens;
 
-	//while ( token_list && token_list->type != T_PROGRAM )
-		token_list = baseline( token_list );
+	token_list = reduce( token_list );
 
 	return token_list;
 }
 
 parse_node_t *baseline( parse_node_t *tokens ){
-	parse_node_t *ret = NULL;
+	parse_node_t *ret = tokens;
 
 	if ( !tokens ){
-		die( 2, "Have null token, not sure why. Holding note which says \"Look in parser.\"\n" );
+		printf( "[parser] Have null tokens list\n" );
 		return NULL;
 	}
 
@@ -52,22 +52,31 @@ parse_node_t *baseline( parse_node_t *tokens ){
 		case T_PROGRAM:
 			ret = tokens;
 			break;
+		/*
 		case T_VAR_DECL_LIST:
 			break;
+		*/
 		case T_VAR_DECL:
+			ret = vardecl_stage1( tokens );
 			break;
+		/*
 		case T_FUN_DECL_LIST:
 			break;
 		case T_FUN_DECL:
 			break;
+		*/
+		/*
 		case T_PARAM_DECL_LIST:
 			break;
 		case T_PARAM_DECL_LIST_TAIL:
 			break;
 		case T_PARAM_DECL:
 			break;
-		case T_BLOCK:
+		*/
+		case T_OPEN_CURL:
+			ret = block_stage1( tokens );
 			break;
+		/*
 		case T_TYPE:
 			break;
 		case T_STATEMNT_LIST:
@@ -86,50 +95,122 @@ parse_node_t *baseline( parse_node_t *tokens ){
 			break;
 		case T_BIN_OP:
 			break;
+		*/
 
 		case T_NAME:
 			ret = id_stage1( tokens );
 			break;
 
+		/*
 		case T_INT:
 		case T_DOUBLE:
 		case T_STRING:
 		case T_CHAR:
 			break;
+		*/
 
 		default:
+			printf( "[baseline] returned self\n" );
+			ret = tokens;
 			break;
 	}
 	
 	return ret;
 }
 
+// Reduce won't work until baseline( ) is complete
+parse_node_t *reduce( parse_node_t *tokens ){
+	parse_node_t *temp, *ret;
+
+	if ( !tokens )
+		return tokens;
+
+	printf( "[reduce] reducing %s... ", debug_strings[tokens->type] );
+	ret = temp = tokens;
+	while (( ret = baseline( temp )) && ret != temp )
+		temp = ret;
+
+	if ( ret )
+		temp = ret;
+	else
+		ret = temp;
+
+	printf( "reduced to %s ", debug_strings[ret->type] );
+
+	printf( "\n" );
+	return ret;
+}
+
+parse_node_t *block_stage1( parse_node_t *tokens ){
+	parse_node_t	*ret = NULL,
+			*move = NULL;
+
+	printf( "[block_stage1]\n" );
+	ret = calloc( 1, sizeof( parse_node_t ));
+	move = reduce( tokens->next );
+
+	ret->type = T_BLOCK;
+	ret->down = move;
+
+	if ( move ){
+		if ( !move->next || move->next->type != T_CLOSE_CURL )
+			die( 2, "Expected closing brace\n" );
+		else 
+			move = move->next;
+
+		ret->next = move->next;
+		move->next = NULL;
+	} else {
+		printf( "[dicks]\n" );
+	}
+
+	return ret;
+}
+
+/*
+parse_node_t *block_stage2( parse_node_t *tokens ){
+	parse_node_t 	*ret,
+			*move;
+
+	printf( "[block_stage2]\n" );
+	tokens = tokens->next;
+
+	if ( !tokens || tokens->next->type != T_CLOSE_CURL ){
+		dump_tree( 0, tokens );
+		die( 2, "Expecting closing brace\n" );
+	}
+
+}
+*/
+	
 // Parse names
 parse_node_t *id_stage1( parse_node_t *tokens ){
+	printf( "[id_stage1]\n" );
 	parse_node_t 	*ret = NULL, 
 			*move = NULL;
 
 	if ( !tokens || !tokens->next )
 		return tokens; 
-	
+
 	switch ( tokens->next->type ){
 		case T_NAME:
-			move = id_stage2( tokens->next );
+			move = id_stage2( tokens );
 			break;
 
 		case T_EQUALS:
-			move = id_stage3( tokens->next );
+			move = id_stage3( tokens );
 			break;
 
 		case T_OPEN_BRACK:
-			move = id_stage4( tokens->next );
+			move = id_stage4( tokens );
 			break;
 
 		case T_OPEN_PAREN:
-			move = id_stage5( tokens->next );
+			move = id_stage5( tokens );
 			break;
 
 		default:
+			dump_tree( 0, tokens );
 			die( 3, "Expected statement or expression\n" );
 			break;
 			
@@ -138,8 +219,11 @@ parse_node_t *id_stage1( parse_node_t *tokens ){
 	ret = calloc( 1, sizeof( parse_node_t ));
 
 	if ( move ){
-		ret = move;
+		ret->type = move->status;
 		ret->down = tokens;
+		ret->next = move->next;
+		move->next = NULL;
+		move->status = T_NULL;
 	} else {
 		ret->down = tokens;
 		ret->next = tokens->next;
@@ -152,29 +236,102 @@ parse_node_t *id_stage1( parse_node_t *tokens ){
 
 // At this stage, could be: T_VAR_DECL, T_FUN_DECL, T_PARAM_DECL
 parse_node_t *id_stage2( parse_node_t *tokens ){
+	printf( "[id_stage2]\n" );
 	parse_node_t	*ret = NULL,
 			*move = NULL;
 
 	if ( !tokens->next )
 		return NULL;
 
+	tokens = tokens->next;
+
 	switch ( tokens->next->type ){
 		case T_SEMICOL:
-			move = id_stage2_1( tokens->next );
+			move = id_stage2_1( tokens );
+			break;
+		case T_OPEN_PAREN:
+			move = id_stage2_2( tokens );
+			break;
+		default:
+			move = id_stage2_3( tokens );
+			break;
 	}
+
+	if ( move )
+		ret = move;
 
 	return ret;
 }
 
 // Returns T_VAR_DECL node
 parse_node_t *id_stage2_1( parse_node_t *tokens ){
+	printf( "[id_stage2_1]\n" );
+	parse_node_t *ret;
+
+	if ( !tokens->next )
+		return NULL;
+
+	ret = tokens->next;
+	ret->status = T_VAR_DECL;
+
+	return ret;
+}
+
+// T_FUN_DECL, must make sure it's correct.
+parse_node_t *id_stage2_2( parse_node_t *tokens ){
+	printf( "[id_stage2_2]\n" );
+	parse_node_t	*ret = tokens, 
+			*move = NULL;
+
+	if ( !tokens->next )
+		return NULL;
+
+	tokens = tokens->next;
+	printf( "%s\n", debug_strings[tokens->next->type] );
+	tokens->next = reduce( tokens->next );
+
+	switch ( tokens->next->type ){
+		case T_PARAM_DECL_LIST:
+			move = id_stage2_2_1( tokens );
+			break;
+
+		case T_CLOSE_PAREN:
+			move = id_stage2_2_1( tokens );
+			break;
+
+		default:
+			break;
+	}
+
+	if ( move )
+		ret = move;
+
+	return ret;
+}
+
+parse_node_t *id_stage2_2_1( parse_node_t *tokens ){
+	printf( "[id_stage2_2_1]\n" );
 	parse_node_t *ret = NULL;
 
-	ret = calloc( 1, sizeof( parse_node_t ));
+	tokens = tokens->next;
+	tokens->next = reduce( tokens->next );
 
-	ret->next = tokens->next;
-	ret->type = T_VAR_DECL;
-	tokens->next = NULL;
+	if ( tokens->next->type != T_BLOCK ){
+		dump_tree( 0, tokens );
+		die( 3, "Expected block in function declaration\n" );
+	}
+
+	ret = tokens->next;
+	ret->status = T_FUN_DECL;
+
+	return ret;
+}
+
+// T_PARAM_DECL, make sure it's correct.
+parse_node_t *id_stage2_3( parse_node_t *tokens ){
+	parse_node_t *ret = tokens;
+
+	ret->status = T_PARAM_DECL;
 
 	return ret;
 }
@@ -198,6 +355,36 @@ parse_node_t *id_stage5( parse_node_t *tokens ){
 			*move = NULL;
 
 	return ret;
+}
+
+parse_node_t *vardecl_stage1( parse_node_t *tokens ){
+	parse_node_t 	*ret = NULL,
+			*move = NULL;
+
+	if ( !tokens->next )
+		return NULL;
+
+	if ( tokens->next->type != T_VAR_DECL_LIST ){
+		printf( "Hmm: %s\n", debug_strings[tokens->next->type] );
+		move = reduce( tokens->next );
+	}
+
+	ret = calloc( 1, sizeof( parse_node_t ));
+	if ( move->type == T_VAR_DECL_LIST ){
+		ret->type = T_VAR_DECL_LIST;
+		ret->next = move->next;
+		ret->down = tokens;
+		tokens->next = move;
+		move->next = NULL;
+	} else {
+		ret->type = T_VAR_DECL_LIST;
+		ret->down = tokens;
+		ret->next = move;
+		ret->down->next = NULL;
+	}
+		
+	return ret;
+	//return NULL;
 }
 
 // Binary op identity function

@@ -1,21 +1,6 @@
 #include "parse.h"
 #include "lex.h"
-
-void dump_tree( int level, parse_node_t *token ){
-	parse_node_t *move = token;
-	int i;
-
-	while( move ){
-		for ( i = 0; i < level; i++ )
-			printf( "\t" );
-
-		printf( "%d\n", move->type );
-		if ( move->down )
-			dump_tree( level + 1, move->down );
-
-		move = move->next;
-	}
-}
+#include "debug.h"
 
 int main( int argc, char *argv[] ){
 	parse_node_t *meh, *move;
