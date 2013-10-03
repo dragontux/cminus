@@ -71,9 +71,11 @@ parse_node_t *baseline( parse_node_t *tokens ){
 			break;
 		case T_PARAM_DECL_LIST_TAIL:
 			break;
-		case T_PARAM_DECL:
-			break;
 		*/
+		case T_PARAM_DECL:
+			ret = paramdecl_stage1( tokens );
+			break;
+
 		case T_OPEN_CURL:
 			ret = block_stage1( tokens );
 			break;
@@ -102,13 +104,12 @@ parse_node_t *baseline( parse_node_t *tokens ){
 			ret = id_stage1( tokens );
 			break;
 
-		/*
 		case T_INT:
 		case T_DOUBLE:
 		case T_STRING:
 		case T_CHAR:
+			ret = expr_map( tokens );
 			break;
-		*/
 
 		default:
 			printf( "[baseline] returned self\n" );
@@ -119,7 +120,6 @@ parse_node_t *baseline( parse_node_t *tokens ){
 	return ret;
 }
 
-// Reduce won't work until baseline( ) is complete
 parse_node_t *reduce( parse_node_t *tokens ){
 	parse_node_t *temp, *ret;
 
@@ -155,10 +155,12 @@ parse_node_t *block_stage1( parse_node_t *tokens ){
 	ret->down = move;
 
 	if ( move ){
-		if ( !move->next || move->next->type != T_CLOSE_CURL )
+		if ( !move->next || move->next->type != T_CLOSE_CURL ){
+			dump_tree( 0, move->next );
 			die( 2, "Expected closing brace\n" );
-		else 
+		} else {
 			move = move->next;
+		}
 
 		ret->next = move->next;
 		move->next = NULL;
@@ -169,21 +171,20 @@ parse_node_t *block_stage1( parse_node_t *tokens ){
 	return ret;
 }
 
-/*
-parse_node_t *block_stage2( parse_node_t *tokens ){
-	parse_node_t 	*ret,
-			*move;
+// Maps a single token to an expr token
+parse_node_t *expr_map( parse_node_t *tokens ){
+	parse_node_t	*ret = NULL,
+			*move = NULL;
 
-	printf( "[block_stage2]\n" );
-	tokens = tokens->next;
+	ret = calloc( 1, sizeof( parse_node_t ));
 
-	if ( !tokens || tokens->next->type != T_CLOSE_CURL ){
-		dump_tree( 0, tokens );
-		die( 2, "Expecting closing brace\n" );
-	}
+	ret->type = T_EXPR;
+	ret->down = tokens;
+	ret->next = tokens->next;
+	tokens->next = NULL;
 
+	return ret;
 }
-*/
 
 // Parse function declaration lists
 parse_node_t *funcdecl_stage1( parse_node_t *tokens ){
@@ -301,6 +302,7 @@ parse_node_t *id_stage2_1( parse_node_t *tokens ){
 	if ( !tokens->next )
 		return NULL;
 
+	// Makes last node of T_VAR_DECL the semicolon
 	ret = tokens->next;
 	ret->status = T_VAR_DECL;
 
@@ -320,9 +322,12 @@ parse_node_t *id_stage2_2( parse_node_t *tokens ){
 	printf( "%s\n", debug_strings[tokens->next->type] );
 	tokens->next = reduce( tokens->next );
 
+	printf( "\t2_2_1: %s\n", debug_strings[tokens->next->type] );
+
 	switch ( tokens->next->type ){
 		case T_PARAM_DECL_LIST:
-			move = id_stage2_2_1( tokens );
+			printf( "\t[blerg]\n" );
+			move = id_stage2_2_1( tokens->next );
 			break;
 
 		case T_CLOSE_PAREN:
@@ -330,6 +335,9 @@ parse_node_t *id_stage2_2( parse_node_t *tokens ){
 			break;
 
 		default:
+			dump_tree( 0, tokens );
+			die( 2, "Expected parameter declaration in function, got %s\n", 
+				debug_strings[ tokens->next->type ] );
 			break;
 	}
 
@@ -340,8 +348,11 @@ parse_node_t *id_stage2_2( parse_node_t *tokens ){
 }
 
 parse_node_t *id_stage2_2_1( parse_node_t *tokens ){
-	printf( "[id_stage2_2_1]\n" );
+	printf( "[id_stage2_2_1] %s\n", debug_strings[tokens->type] );
 	parse_node_t *ret = NULL;
+
+	if ( !tokens->next )
+		return NULL;
 
 	tokens = tokens->next;
 	tokens->next = reduce( tokens->next );
@@ -387,6 +398,39 @@ parse_node_t *id_stage5( parse_node_t *tokens ){
 	return ret;
 }
 
+// Parse parameter declaration lists
+parse_node_t *paramdecl_stage1( parse_node_t *tokens ){
+	printf( "[paramdecl 1] %s\n", debug_strings[tokens->type] );
+	parse_node_t 	*ret = NULL,
+			*move = NULL;
+
+	if ( !tokens->next )
+		return NULL;
+
+	if ( tokens->next->type == T_COMMA ){
+		tokens->next->next = move = reduce( tokens->next->next );
+		printf( "Blargen: %s\n", debug_strings[move->type] );
+	} else if ( tokens->next->type != T_PARAM_DECL_LIST ){
+		tokens->next = move = reduce( tokens->next );
+		printf( "Blaggen: %s\n", debug_strings[move->type] );
+	}
+
+	ret = calloc( 1, sizeof( parse_node_t ));
+	ret->down = tokens;
+	ret->type = T_PARAM_DECL_LIST;
+
+	if ( move->type == T_PARAM_DECL_LIST ){
+		ret->next = move->next;
+		tokens->next = move;
+		move->next = NULL;
+	} else {
+		ret->next = move;
+		tokens->next = NULL;
+	}
+
+	return ret;
+}
+
 // Parse variable declaration lists
 parse_node_t *vardecl_stage1( parse_node_t *tokens ){
 	parse_node_t 	*ret = NULL,
@@ -397,12 +441,13 @@ parse_node_t *vardecl_stage1( parse_node_t *tokens ){
 
 	if ( tokens->next->type != T_VAR_DECL_LIST ){
 		printf( "Hmm: %s\n", debug_strings[tokens->next->type] );
-		move = reduce( tokens->next );
+		tokens->next = move = reduce( tokens->next );
 	}
 
 	ret = calloc( 1, sizeof( parse_node_t ));
 	ret->down = tokens;
 	ret->type = T_VAR_DECL_LIST;
+
 	if ( move->type == T_VAR_DECL_LIST ){
 		ret->next = move->next;
 		tokens->next = move;

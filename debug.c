@@ -79,10 +79,14 @@ void dump_tree( int level, parse_node_t *token ){
 
 	while( move ){
 		for ( i = 0; i < level; i++ )
-			printf( "\t" );
+			printf( "    " );
 
-		//printf( "%d\n", move->type );
-		printf( "%s\n", debug_strings[ move->type ] );
+		printf( "%s ", debug_strings[ move->type ] );
+		if ( move->type == T_NAME )
+			printf( "(%s) ", (char *)move->data );
+
+		printf( "\n" );
+		
 		if ( move->down )
 			dump_tree( level + 1, move->down );
 

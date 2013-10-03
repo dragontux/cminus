@@ -98,6 +98,8 @@ parse_node_t *reduce( parse_node_t * );
 // Grammar functions 
 parse_node_t *block_stage1( parse_node_t * );
 
+parse_node_t *expr_map( parse_node_t * );
+
 parse_node_t *funcdecl_stage1( parse_node_t * );
 
 parse_node_t *id_stage1( parse_node_t * );
@@ -111,6 +113,9 @@ parse_node_t *id_stage2_3( parse_node_t * );
 parse_node_t *id_stage3( parse_node_t * );
 parse_node_t *id_stage4( parse_node_t * );
 parse_node_t *id_stage5( parse_node_t * );
+
+parse_node_t *paramdecl_stage1( parse_node_t * );
+parse_node_t *paramdecl_stage2( parse_node_t * );
 
 parse_node_t *vardecl_stage1( parse_node_t * );
 

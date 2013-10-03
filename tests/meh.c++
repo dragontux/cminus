@@ -5,12 +5,12 @@ int d;
 int e;
 int f;
 
-int woot( ){
+int woot( int a, char b ){
 	int some;
 	int vars_man;
 }
 
-int blarg( ){
+int blarg( int a ){
 	int cool;
 	int it_werks;
 	int blag;

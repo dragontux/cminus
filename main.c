@@ -14,6 +14,8 @@ int main( int argc, char *argv[] ){
 	fclose( fp );
 
 	printf( "-=[ Lexer dump: \n" );
+	dump_tree( 0, move );
+	/*
 	while ( move->next ){
 		printf( "got token %d\t", move->type );
 
@@ -26,6 +28,7 @@ int main( int argc, char *argv[] ){
 		printf( "\n" );
 		move = move->next;
 	}
+	*/
 
 	move = parse_tokens( meh );
 	printf( "-=[ Parse tree dump: \n" );

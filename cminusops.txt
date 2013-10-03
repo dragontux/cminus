@@ -5,6 +5,7 @@ C-- Programming Language Specification
 Program			−→ 	VarDeclList FunDeclList
 VarDeclList		−→ 	[none]
 				VarDecl VarDeclList
+				VarDecl
 VarDecl			−→ 	Type id ;
 				Type id [ num ] ;
 FunDeclList		−→	FunDecl
@@ -31,12 +32,12 @@ Stmt			−→	;
 				if ( Expr ) Stmt else Stmt
 				while ( Expr ) Stmt
 				Block
-Expr			−→	Primary
-				UnaryOp Expr
+Expr			−→	UnaryOp Expr
 				Expr BinOp Expr
 				id = Expr
 				id [ Expr ] = Expr
-Primary			−→	id
+				// Primary types, merged with Expr
+				id
 				num
 				( Expr )
 				id ( ExprList )
