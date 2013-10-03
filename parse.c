@@ -62,9 +62,10 @@ parse_node_t *baseline( parse_node_t *tokens ){
 		/*
 		case T_FUN_DECL_LIST:
 			break;
-		case T_FUN_DECL:
-			break;
 		*/
+		case T_FUN_DECL:
+			ret = funcdecl_stage1( tokens );
+			break;
 		/*
 		case T_PARAM_DECL_LIST:
 			break;
@@ -141,6 +142,7 @@ parse_node_t *reduce( parse_node_t *tokens ){
 	return ret;
 }
 
+// Parse blocks
 parse_node_t *block_stage1( parse_node_t *tokens ){
 	parse_node_t	*ret = NULL,
 			*move = NULL;
@@ -182,8 +184,36 @@ parse_node_t *block_stage2( parse_node_t *tokens ){
 
 }
 */
+
+// Parse function declaration lists
+parse_node_t *funcdecl_stage1( parse_node_t *tokens ){
+	parse_node_t 	*ret = NULL,
+			*move = NULL;
+
+	if ( !tokens->next )
+		return NULL;
+
+	if ( tokens->next->type != T_FUN_DECL_LIST ){
+		printf( "Meh: %s\n", debug_strings[tokens->next->type] );
+		move = reduce( tokens->next );
+	}
+
+	ret = calloc( 1, sizeof( parse_node_t ));
+	ret->down = tokens;
+	ret->type = T_FUN_DECL_LIST;
+	if ( move->type == T_FUN_DECL_LIST ){
+		ret->next = move->next;
+		tokens->next = move;
+		move->next = NULL;
+	} else {
+		ret->next = move;
+		tokens->next = NULL;
+	}
+		
+	return ret;
+}
 	
-// Parse names
+// Parse rules starting with "id"
 parse_node_t *id_stage1( parse_node_t *tokens ){
 	printf( "[id_stage1]\n" );
 	parse_node_t 	*ret = NULL, 
@@ -357,6 +387,7 @@ parse_node_t *id_stage5( parse_node_t *tokens ){
 	return ret;
 }
 
+// Parse variable declaration lists
 parse_node_t *vardecl_stage1( parse_node_t *tokens ){
 	parse_node_t 	*ret = NULL,
 			*move = NULL;
@@ -370,21 +401,18 @@ parse_node_t *vardecl_stage1( parse_node_t *tokens ){
 	}
 
 	ret = calloc( 1, sizeof( parse_node_t ));
+	ret->down = tokens;
+	ret->type = T_VAR_DECL_LIST;
 	if ( move->type == T_VAR_DECL_LIST ){
-		ret->type = T_VAR_DECL_LIST;
 		ret->next = move->next;
-		ret->down = tokens;
 		tokens->next = move;
 		move->next = NULL;
 	} else {
-		ret->type = T_VAR_DECL_LIST;
-		ret->down = tokens;
 		ret->next = move;
-		ret->down->next = NULL;
+		tokens->next = NULL;
 	}
 		
 	return ret;
-	//return NULL;
 }
 
 // Binary op identity function

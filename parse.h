@@ -95,7 +95,10 @@ parse_node_t *parse_tokens( parse_node_t * );
 parse_node_t *baseline( parse_node_t * );
 parse_node_t *reduce( parse_node_t * );
 
+// Grammar functions 
 parse_node_t *block_stage1( parse_node_t * );
+
+parse_node_t *funcdecl_stage1( parse_node_t * );
 
 parse_node_t *id_stage1( parse_node_t * );
 

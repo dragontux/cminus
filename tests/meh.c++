@@ -6,8 +6,14 @@ int e;
 int f;
 
 int woot( ){
-	int g;
-	int h;
+	int some;
+	int vars_man;
+}
+
+int blarg( ){
+	int cool;
+	int it_werks;
+	int blag;
 }
 
 char a;
