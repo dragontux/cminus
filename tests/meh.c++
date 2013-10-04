@@ -8,8 +8,10 @@ int f;
 int woot( int a, char b ){
 	int var;
 
-	a = a = b = var;
-	var = b;
+	a = a + b;
+	var = b - a;
+
+	return a;
 }
 
 int blarg( int a ){
@@ -17,7 +19,9 @@ int blarg( int a ){
 	int it_werks;
 	int blarg;
 
-	blarg = a;
+	blarg = a = 10;
+
+	return blarg;
 }
 
 char a;

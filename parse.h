@@ -105,6 +105,7 @@ parse_node_t *block_stage4( parse_node_t * );
 
 parse_node_t *expr_stage1( parse_node_t * );
 parse_node_t *expr_stage2( parse_node_t * );
+parse_node_t *expr_stage3( parse_node_t * );
 
 parse_node_t *funcdecl_stage1( parse_node_t * );
 
@@ -122,6 +123,8 @@ parse_node_t *id_stage5( parse_node_t * );
 
 parse_node_t *paramdecl_stage1( parse_node_t * );
 parse_node_t *paramdecl_stage2( parse_node_t * );
+
+parse_node_t *return_stage1( parse_node_t * );
 
 parse_node_t *statelist_stage1( parse_node_t * );
 

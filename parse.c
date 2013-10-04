@@ -110,8 +110,21 @@ parse_node_t *baseline( parse_node_t *tokens ){
 			ret = id_stage1( tokens );
 			break;
 
+		case T_RETURN:
+			ret = return_stage1( tokens );
+			break;
+
 		case T_PRIMARY:
 			ret = maptoken( tokens, T_EXPR );
+			break;
+
+		case T_AMP:
+		case T_PIPE:
+		case T_PLUS:
+		case T_MINUS:
+		case T_SLASH:
+		case T_STAR:
+			ret = maptoken( tokens, T_BIN_OP );
 			break;
 
 		case T_INT:
@@ -230,25 +243,30 @@ parse_node_t *expr_stage1( parse_node_t *tokens ){
 	if ( !tokens->next )
 		return NULL;
 
+	if ( tokens->next->type != T_SEMICOL )
+		tokens->next = baseline( tokens->next );
+
 	switch( tokens->next->type ){
 		case T_SEMICOL:
 			move = expr_stage2( tokens );
 			break;
 
 		case T_BIN_OP:
+			move = expr_stage3( tokens );
 			break;
 
 		default:
-			dump_tree( 0, tokens );
-			die( 2, "Expected semicolon or operator after expression\n" );
+			ret = tokens;
 			break;
 	}
 
-	ret = calloc( 1, sizeof( parse_node_t ));
-	ret->down = tokens;
-	ret->type = move->status;
-	ret->next = move->next;
-	move->next = NULL;
+	if ( !ret ){
+		ret = calloc( 1, sizeof( parse_node_t ));
+		ret->down = tokens;
+		ret->type = move->status;
+		ret->next = move->next;
+		move->next = NULL;
+	}
 
 	return ret;
 }
@@ -267,6 +285,32 @@ parse_node_t *expr_stage2( parse_node_t *tokens ){
 	//tokens->next->status = T_STATEMNT;
 	ret = tokens;
 	ret->status = T_STATEMNT;
+
+	return ret;
+}
+
+parse_node_t *expr_stage3( parse_node_t *tokens ){
+	printf( "[expr_stage3] " );
+	parse_node_t	*ret = NULL,
+			*move = NULL;
+
+	if ( !tokens->next )
+		return NULL;
+
+	tokens = tokens->next;
+
+	printf( "%s\n", debug_strings[ tokens->next->type ]);
+
+	tokens->next = baseline( tokens->next );
+
+	if ( tokens->next->type != T_EXPR ){
+		dump_tree( 0, tokens );
+		die( 2, "Expected expression after binary operator\n" );
+	}
+	
+
+	ret = tokens->next;
+	ret->status = T_EXPR;
 
 	return ret;
 }
@@ -555,6 +599,34 @@ parse_node_t *paramdecl_stage1( parse_node_t *tokens ){
 	return ret;
 }
 
+parse_node_t *return_stage1( parse_node_t *tokens ){
+	parse_node_t	*ret = NULL,
+			*move = NULL;
+
+	if ( !tokens->next )
+		return NULL;
+
+	tokens->next = baseline( tokens->next );
+
+	if ( tokens->next->type != T_EXPR ){
+		dump_tree( 0, tokens );
+		die( 2, "Expected expression after return\n" );
+	}
+
+	if ( tokens->next->next->type != T_SEMICOL ){
+		dump_tree( 0, tokens );
+		die( 2, "Expected semicolon after expression\n" );
+	}
+
+	ret = calloc( 1, sizeof( parse_node_t ));
+	ret->type = T_STATEMNT;
+	ret->next = tokens->next->next->next;
+	ret->down = tokens;
+	tokens->next->next->next = NULL;
+
+	return ret;
+}
+
 parse_node_t *statelist_stage1( parse_node_t *tokens ){
 	parse_node_t 	*ret = NULL,
 			*move = NULL;
@@ -611,22 +683,6 @@ parse_node_t *vardecl_stage1( parse_node_t *tokens ){
 		
 	return ret;
 }
-
-// Binary op identity function
-parse_node_t *binop( parse_node_t *tokens ){
-	parse_node_t *ret = calloc( 1, sizeof( parse_node_t ));
-
-	ret->down = tokens;
-	ret->type = T_BIN_OP;
-	ret->next = tokens->next;
-	tokens->next = NULL;
-
-	return ret;
-}
-
-
-
-
 
 
 
