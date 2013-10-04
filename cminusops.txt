@@ -32,12 +32,12 @@ Stmt			−→	;
 				if ( Expr ) Stmt else Stmt
 				while ( Expr ) Stmt
 				Block
-Expr			−→	UnaryOp Expr
+Expr			−→	Primary
+				UnaryOp Expr
 				Expr BinOp Expr
 				id = Expr
 				id [ Expr ] = Expr
-				// Primary types, merged with Expr
-				id
+Primary			−→	id
 				num
 				( Expr )
 				id ( ExprList )

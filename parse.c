@@ -79,16 +79,22 @@ parse_node_t *baseline( parse_node_t *tokens ){
 		case T_OPEN_CURL:
 			ret = block_stage1( tokens );
 			break;
+
+		case T_SEMICOL:
+			ret = maptoken( tokens, T_STATEMNT );
+			break;
+
+		case T_EXPR:
+			ret = expr_stage1( tokens );
+			break;
+
+		case T_STATEMNT:
+			ret = statelist_stage1( tokens );
+			break;
 		/*
 		case T_TYPE:
 			break;
 		case T_STATEMNT_LIST:
-			break;
-		case T_STATEMNT:
-			break;
-		case T_EXPR:
-			break;
-		case T_PRIMARY:
 			break;
 		case T_EXPR_LIST:
 			break;
@@ -104,11 +110,15 @@ parse_node_t *baseline( parse_node_t *tokens ){
 			ret = id_stage1( tokens );
 			break;
 
+		case T_PRIMARY:
+			ret = maptoken( tokens, T_EXPR );
+			break;
+
 		case T_INT:
 		case T_DOUBLE:
 		case T_STRING:
 		case T_CHAR:
-			ret = expr_map( tokens );
+			ret = maptoken( tokens, T_PRIMARY );
 			break;
 
 		default:
@@ -131,11 +141,7 @@ parse_node_t *reduce( parse_node_t *tokens ){
 	while (( ret = baseline( temp )) && ret != temp )
 		temp = ret;
 
-	if ( ret )
-		temp = ret;
-	else
-		ret = temp;
-
+	ret = ret? ret : temp;
 	printf( "reduced to %s ", debug_strings[ret->type] );
 
 	printf( "\n" );
@@ -154,31 +160,125 @@ parse_node_t *block_stage1( parse_node_t *tokens ){
 	ret->type = T_BLOCK;
 	ret->down = move;
 
-	if ( move ){
-		if ( !move->next || move->next->type != T_CLOSE_CURL ){
-			dump_tree( 0, move->next );
-			die( 2, "Expected closing brace\n" );
-		} else {
-			move = move->next;
-		}
+	move = block_stage2( move );
 
-		ret->next = move->next;
-		move->next = NULL;
+	if ( !move->next || move->next->type != T_CLOSE_CURL ){
+		dump_tree( 0, move->next );
+		die( 2, "Expected closing brace\n" );
 	} else {
-		printf( "[dicks]\n" );
+		move = move->next;
+	}
+
+	ret->next = move->next;
+	move->next = NULL;
+
+	return ret;
+}
+
+parse_node_t *block_stage2( parse_node_t *tokens ){
+	parse_node_t	*ret = NULL,
+			*move = NULL;
+	printf( "[block_stage2] %s\n", debug_strings[ tokens->next->type ] );
+
+	//tokens = tokens->next;
+
+	switch( tokens->type ){
+		case T_VAR_DECL_LIST:
+			ret = block_stage3( tokens );
+			break;
+		case T_STATEMNT_LIST:
+			ret = block_stage4( tokens );
+			break;
+		default:
+			dump_tree( 0, tokens );
+			die( 2, "Expected variable declaration or statement\n" );
 	}
 
 	return ret;
 }
 
-// Maps a single token to an expr token
-parse_node_t *expr_map( parse_node_t *tokens ){
+parse_node_t *block_stage3( parse_node_t *tokens ){
+	parse_node_t	*ret = NULL,
+			*move = NULL;
+	printf( "[block_stage3] %s\n", debug_strings[ tokens->next->type ] );
+	
+	if ( !tokens->next || tokens->next->type != T_STATEMNT_LIST ){
+		dump_tree( 0, tokens );
+		die( 2, "Expected statement after variable declaration\n" );
+	}
+
+	ret = block_stage4( tokens->next );
+
+	return ret;
+}
+
+parse_node_t *block_stage4( parse_node_t *tokens ){
+	parse_node_t	*ret = NULL,
+			*move = NULL;
+	printf( "[block_stage3]\n" );
+
+	ret = tokens;
+
+	return ret;
+}
+
+parse_node_t *expr_stage1( parse_node_t *tokens ){
+	printf( "[expr_stage1] %s\n", debug_strings[tokens->next->type] );
+	parse_node_t	*ret = NULL,
+			*move = NULL;
+
+	if ( !tokens->next )
+		return NULL;
+
+	switch( tokens->next->type ){
+		case T_SEMICOL:
+			move = expr_stage2( tokens );
+			break;
+
+		case T_BIN_OP:
+			break;
+
+		default:
+			dump_tree( 0, tokens );
+			die( 2, "Expected semicolon or operator after expression\n" );
+			break;
+	}
+
+	ret = calloc( 1, sizeof( parse_node_t ));
+	ret->down = tokens;
+	ret->type = move->status;
+	ret->next = move->next;
+	move->next = NULL;
+
+	return ret;
+}
+
+parse_node_t *expr_stage2( parse_node_t *tokens ){
+	printf( "[expr_stage2]\n" );
+	parse_node_t	*ret = NULL,
+			*move = NULL;
+
+	if ( !tokens->next )
+		return NULL;
+
+	tokens = tokens->next;
+	printf( "\t%s\n", debug_strings[tokens->type] );
+
+	//tokens->next->status = T_STATEMNT;
+	ret = tokens;
+	ret->status = T_STATEMNT;
+
+	return ret;
+}
+
+// Maps a single token to another token
+parse_node_t *maptoken( parse_node_t *tokens, token_type_t type ){
 	parse_node_t	*ret = NULL,
 			*move = NULL;
 
 	ret = calloc( 1, sizeof( parse_node_t ));
 
-	ret->type = T_EXPR;
+	ret->type = type;
 	ret->down = tokens;
 	ret->next = tokens->next;
 	tokens->next = NULL;
@@ -213,7 +313,7 @@ parse_node_t *funcdecl_stage1( parse_node_t *tokens ){
 		
 	return ret;
 }
-	
+
 // Parse rules starting with "id"
 parse_node_t *id_stage1( parse_node_t *tokens ){
 	printf( "[id_stage1]\n" );
@@ -241,25 +341,26 @@ parse_node_t *id_stage1( parse_node_t *tokens ){
 			break;
 
 		default:
-			dump_tree( 0, tokens );
-			die( 3, "Expected statement or expression\n" );
+			ret = maptoken( tokens, T_PRIMARY );
 			break;
 			
 	}
 
-	ret = calloc( 1, sizeof( parse_node_t ));
+	if ( !ret ){
+		ret = calloc( 1, sizeof( parse_node_t ));
 
-	if ( move ){
-		ret->type = move->status;
-		ret->down = tokens;
-		ret->next = move->next;
-		move->next = NULL;
-		move->status = T_NULL;
-	} else {
-		ret->down = tokens;
-		ret->next = tokens->next;
-		ret->type = T_PRIMARY;
-		tokens->next = NULL;
+		if ( move ){
+			ret->type = move->status;
+			ret->down = tokens;
+			ret->next = move->next;
+			move->next = NULL;
+			move->status = T_NULL;
+		} else {
+			ret->down = tokens;
+			ret->next = tokens->next;
+			ret->type = T_PRIMARY;
+			tokens->next = NULL;
+		}
 	}
 
 	return ret;
@@ -377,9 +478,27 @@ parse_node_t *id_stage2_3( parse_node_t *tokens ){
 	return ret;
 }
 
+// Parse assignment expression
 parse_node_t *id_stage3( parse_node_t *tokens ){
 	parse_node_t	*ret = NULL,
 			*move = NULL;
+
+	if ( !tokens->next ) // wut
+		return NULL;
+
+	tokens = tokens->next;
+
+	if ( !tokens->next )
+		return NULL;
+
+	tokens->next = reduce( tokens->next );
+	if ( tokens->next->type != T_EXPR ){
+		dump_tree( 0, tokens );
+		die( 2, "Expected expression for assignment.\n" );
+	}
+
+	ret = tokens->next;
+	ret->status = T_EXPR;
 
 	return ret;
 }
@@ -410,9 +529,11 @@ parse_node_t *paramdecl_stage1( parse_node_t *tokens ){
 	if ( tokens->next->type == T_COMMA ){
 		tokens->next->next = move = reduce( tokens->next->next );
 		printf( "Blargen: %s\n", debug_strings[move->type] );
+
 	} else if ( tokens->next->type != T_PARAM_DECL_LIST ){
 		tokens->next = move = reduce( tokens->next );
 		printf( "Blaggen: %s\n", debug_strings[move->type] );
+
 	}
 
 	ret = calloc( 1, sizeof( parse_node_t ));
@@ -423,11 +544,41 @@ parse_node_t *paramdecl_stage1( parse_node_t *tokens ){
 		ret->next = move->next;
 		tokens->next = move;
 		move->next = NULL;
+
+	} else {
+		ret->next = move;
+		tokens->next = NULL;
+
+	}
+
+	return ret;
+}
+
+parse_node_t *statelist_stage1( parse_node_t *tokens ){
+	parse_node_t 	*ret = NULL,
+			*move = NULL;
+
+	if ( !tokens->next )
+		return NULL;
+
+	if ( tokens->next->type != T_STATEMNT_LIST ){
+		printf( "warg: %s\n", debug_strings[tokens->next->type] );
+		tokens->next = move = reduce( tokens->next );
+	}
+
+	ret = calloc( 1, sizeof( parse_node_t ));
+	ret->down = tokens;
+	ret->type = T_STATEMNT_LIST;
+
+	if ( move->type == T_STATEMNT_LIST ){
+		ret->next = move->next;
+		tokens->next = move;
+		move->next = NULL;
 	} else {
 		ret->next = move;
 		tokens->next = NULL;
 	}
-
+		
 	return ret;
 }
 

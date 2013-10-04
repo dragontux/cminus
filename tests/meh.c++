@@ -6,14 +6,16 @@ int e;
 int f;
 
 int woot( int a, char b ){
-	int some;
-	int vars_man;
+	int var;
+	a = var;
 }
 
 int blarg( int a ){
 	int cool;
 	int it_werks;
 	int blag;
+
+	blarg;
 }
 
 char a;
