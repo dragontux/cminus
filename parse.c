@@ -118,7 +118,7 @@ parse_node_t *baseline( parse_node_t *tokens ){
 		case T_DOUBLE:
 		case T_STRING:
 		case T_CHAR:
-			ret = maptoken( tokens, T_PRIMARY );
+			ret = maptoken( tokens, T_EXPR );
 			break;
 
 		default:
@@ -341,7 +341,8 @@ parse_node_t *id_stage1( parse_node_t *tokens ){
 			break;
 
 		default:
-			ret = maptoken( tokens, T_PRIMARY );
+			//ret = maptoken( tokens, T_PRIMARY );
+			ret = maptoken( tokens, T_EXPR );
 			break;
 			
 	}
@@ -491,7 +492,7 @@ parse_node_t *id_stage3( parse_node_t *tokens ){
 	if ( !tokens->next )
 		return NULL;
 
-	tokens->next = reduce( tokens->next );
+	tokens->next = baseline( tokens->next );
 	if ( tokens->next->type != T_EXPR ){
 		dump_tree( 0, tokens );
 		die( 2, "Expected expression for assignment.\n" );
