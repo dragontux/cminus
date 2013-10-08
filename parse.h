@@ -96,6 +96,7 @@ parse_node_t *parse_tokens( parse_node_t * );
 parse_node_t *baseline( parse_node_t * );
 parse_node_t *maptoken( parse_node_t *, token_type_t );
 parse_node_t *reduce( parse_node_t * );
+parse_node_t *reduceto( parse_node_t *, token_type_t );
 
 // Grammar functions 
 parse_node_t *block_stage1( parse_node_t * );
@@ -129,5 +130,6 @@ parse_node_t *return_stage1( parse_node_t * );
 parse_node_t *statelist_stage1( parse_node_t * );
 
 parse_node_t *vardecl_stage1( parse_node_t * );
+parse_node_t *while_stage1( parse_node_t * );
 
 #endif

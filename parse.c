@@ -106,12 +106,20 @@ parse_node_t *baseline( parse_node_t *tokens ){
 			break;
 		*/
 
+		case T_BLOCK:
+			ret = maptoken( tokens, T_STATEMNT );
+			break;
+
 		case T_NAME:
 			ret = id_stage1( tokens );
 			break;
 
 		case T_RETURN:
 			ret = return_stage1( tokens );
+			break;
+
+		case T_WHILE:
+			ret = while_stage1( tokens );
 			break;
 
 		case T_PRIMARY:
@@ -143,6 +151,7 @@ parse_node_t *baseline( parse_node_t *tokens ){
 	return ret;
 }
 
+// Run series of tokens through baseline repeatedly until a terminal type is reached
 parse_node_t *reduce( parse_node_t *tokens ){
 	parse_node_t *temp, *ret;
 
@@ -155,6 +164,31 @@ parse_node_t *reduce( parse_node_t *tokens ){
 		temp = ret;
 
 	ret = ret? ret : temp;
+	printf( "reduced to %s ", debug_strings[ret->type] );
+
+	printf( "\n" );
+	return ret;
+}
+
+// same as reduce, except that the loop is halted if a specific type is reached first.
+parse_node_t *reduceto( parse_node_t *tokens, token_type_t type ){
+	parse_node_t *temp, *ret;
+
+	if ( !tokens )
+		return tokens;
+
+	printf( "[reduce] reducing %s... ", debug_strings[tokens->type] );
+	ret = temp = tokens;
+	while (( ret = baseline( temp )) && ret != temp && ret->type != type )
+		temp = ret;
+
+	ret = ret? ret : temp;
+
+	/*
+	while ( ret->type == type && temp != ret )
+		temp = ret = baseline( ret );
+	*/
+
 	printf( "reduced to %s ", debug_strings[ret->type] );
 
 	printf( "\n" );
@@ -301,7 +335,7 @@ parse_node_t *expr_stage3( parse_node_t *tokens ){
 
 	printf( "%s\n", debug_strings[ tokens->next->type ]);
 
-	tokens->next = baseline( tokens->next );
+	tokens->next = reduceto( tokens->next, T_EXPR );
 
 	if ( tokens->next->type != T_EXPR ){
 		dump_tree( 0, tokens );
@@ -501,7 +535,7 @@ parse_node_t *id_stage2_2_1( parse_node_t *tokens ){
 		return NULL;
 
 	tokens = tokens->next;
-	tokens->next = reduce( tokens->next );
+	tokens->next = reduceto( tokens->next, T_BLOCK );
 
 	if ( tokens->next->type != T_BLOCK ){
 		dump_tree( 0, tokens );
@@ -536,7 +570,7 @@ parse_node_t *id_stage3( parse_node_t *tokens ){
 	if ( !tokens->next )
 		return NULL;
 
-	tokens->next = baseline( tokens->next );
+	tokens->next = reduceto( tokens->next, T_EXPR );
 	if ( tokens->next->type != T_EXPR ){
 		dump_tree( 0, tokens );
 		die( 2, "Expected expression for assignment.\n" );
@@ -606,7 +640,7 @@ parse_node_t *return_stage1( parse_node_t *tokens ){
 	if ( !tokens->next )
 		return NULL;
 
-	tokens->next = baseline( tokens->next );
+	tokens->next = reduceto( tokens->next, T_EXPR );
 
 	if ( tokens->next->type != T_EXPR ){
 		dump_tree( 0, tokens );
@@ -684,6 +718,47 @@ parse_node_t *vardecl_stage1( parse_node_t *tokens ){
 	return ret;
 }
 
+parse_node_t *while_stage1( parse_node_t *tokens ){
+	parse_node_t	*ret = NULL,
+			*move = NULL;
+
+	if ( !tokens->next )
+		return NULL;
+
+	if ( tokens->next->type != T_OPEN_PAREN ){
+		dump_tree( 0, tokens );
+		die( 2, "Expected opening parenthesis before expression\n" );
+	}
+
+	tokens->next->next = reduceto( tokens->next->next, T_EXPR );
+
+	if ( tokens->next->next->type != T_EXPR ){
+		dump_tree( 0, tokens );
+		die( 2, "Expected expression after parenthesis\n" );
+	}
+
+	if ( !tokens->next->next->next )
+		return NULL;
+
+	if ( tokens->next->next->next->type != T_CLOSE_PAREN ){
+		dump_tree( 0, tokens );
+		die( 2, "Expected closing paren after while declaration\n" );
+	}
+
+	tokens->next->next->next->next = reduceto( tokens->next->next->next->next, T_STATEMNT );
+	if ( tokens->next->next->next->next->type != T_STATEMNT ){
+		dump_tree( 0, tokens );
+		die( 2, "Expected statement after while declaration\n" );
+	}
+
+	ret = calloc( 1, sizeof( parse_node_t ));
+	ret->down = tokens;
+	ret->next = tokens->next->next->next->next->next;
+	tokens->next->next->next->next->next = NULL;
+	ret->type = T_STATEMNT;
+
+	return ret;
+}
 
 
 
