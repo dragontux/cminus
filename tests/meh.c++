@@ -8,8 +8,9 @@ int f;
 int woot( int a, char b ){
 	int var;
 
-	a = a + b;
-	var = b - a;
+	var = a + b;
+	var = var + b - a;
+	var;
 
 	return a;
 }

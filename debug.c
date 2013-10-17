@@ -49,6 +49,7 @@ char *debug_strings[] = {
 
 	"T_VAR_DECL_LIST",
 	"T_VAR_DECL",
+	"T_VAR",
 
 	"T_FUN_DECL_LIST",
 	"T_FUN_DECL",
@@ -62,12 +63,23 @@ char *debug_strings[] = {
 	"T_STATEMNT_LIST",
 	"T_STATEMNT",
 	"T_PRIMARY",
+
 	"T_EXPR",
 	"T_EXPR_LIST",
 	"T_EXPR_LIST_TAIL",
+	"T_SIMPLE_EXPR",
+	"T_ADD_EXPR",
+
+	"T_TERM",
+	"T_FACTOR",
+	"T_CALL",
 
 	"T_UNARY_OP",
 	"T_BIN_OP",
+
+	"T_ADD_OP",
+	"T_MUL_OP",
+	"T_REL_OP",
 
 	"T_ENDTYPE",
 

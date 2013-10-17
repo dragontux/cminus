@@ -52,6 +52,7 @@ typedef enum token_type {
 
 	T_VAR_DECL_LIST,
 	T_VAR_DECL,
+	T_VAR,
 
 	T_FUN_DECL_LIST,
 	T_FUN_DECL,
@@ -65,12 +66,23 @@ typedef enum token_type {
 	T_STATEMNT_LIST,
 	T_STATEMNT,
 	T_PRIMARY,
+
 	T_EXPR,
 	T_EXPR_LIST,
 	T_EXPR_LIST_TAIL,
+	T_SIMPLE_EXPR,
+	T_ADD_EXPR,
+
+	T_TERM,
+	T_FACTOR,
+	T_CALL,
 
 	T_UNARY_OP,
 	T_BIN_OP,
+
+	T_ADD_OP,
+	T_MUL_OP,
+	T_REL_OP,
 
 	T_ENDTYPE,
 
@@ -93,12 +105,17 @@ typedef struct parse_node {
 
 parse_node_t *parse_tokens( parse_node_t * );
 
+
 parse_node_t *baseline( parse_node_t * );
 parse_node_t *maptoken( parse_node_t *, token_type_t );
 parse_node_t *reduce( parse_node_t * );
 parse_node_t *reduceto( parse_node_t *, token_type_t );
 
 // Grammar functions 
+parse_node_t *addexpr_stage1( parse_node_t * );
+parse_node_t *addexpr_stage2( parse_node_t * );
+parse_node_t *addexpr_stage3( parse_node_t * );
+
 parse_node_t *block_stage1( parse_node_t * );
 parse_node_t *block_stage2( parse_node_t * );
 parse_node_t *block_stage3( parse_node_t * );
@@ -128,6 +145,9 @@ parse_node_t *paramdecl_stage2( parse_node_t * );
 parse_node_t *return_stage1( parse_node_t * );
 
 parse_node_t *statelist_stage1( parse_node_t * );
+
+parse_node_t *term_stage1( parse_node_t * );
+parse_node_t *term_stage2( parse_node_t * );
 
 parse_node_t *vardecl_stage1( parse_node_t * );
 parse_node_t *while_stage1( parse_node_t * );
