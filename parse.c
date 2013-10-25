@@ -34,8 +34,10 @@ extern char *debug_strings[];
 
 parse_node_t *parse_tokens( parse_node_t *tokens ){
 	parse_node_t *token_list = tokens;
+	parse_node_t *dicks = NULL;
 
 	token_list = reduce( token_list );
+	dicks = calloc( 1, sizeof( parse_node_t ));
 
 	return token_list;
 }
@@ -47,6 +49,8 @@ parse_node_t *baseline( parse_node_t *tokens ){
 		printf( "[parser] Have null tokens list\n" );
 		return NULL;
 	}
+
+	printf( "[baseline] Have %s. ", debug_strings[ tokens->type ]);
 
 	switch ( tokens->type ){
 		case T_PROGRAM:
@@ -80,9 +84,11 @@ parse_node_t *baseline( parse_node_t *tokens ){
 			ret = block_stage1( tokens );
 			break;
 
+		/*
 		case T_SEMICOL:
 			ret = maptoken( tokens, T_STATEMNT );
 			break;
+		*/
 
 		case T_EXPR:
 			ret = expr_stage1( tokens );
@@ -119,11 +125,15 @@ parse_node_t *baseline( parse_node_t *tokens ){
 			break;
 
 		case T_VAR:
+			printf( "reducing to T_TERM... " );
 			ret = maptoken( tokens, T_FACTOR );
+			printf( "Done\n" );
 			break;
 
 		case T_FACTOR:
+			printf( "reducing to T_TERM... " );
 			ret = maptoken( tokens, T_TERM );
+			printf( "Done\n" );
 			break;
 
 		case T_NAME:
@@ -161,12 +171,13 @@ parse_node_t *baseline( parse_node_t *tokens ){
 		case T_DOUBLE:
 		case T_STRING:
 		case T_CHAR:
+			printf( "reducing to T_FACTOR... " );
 			ret = maptoken( tokens, T_FACTOR );
-			printf( "[baseline] reduced to T_FACTOR\n" );
+			printf( "Done\n" );
 			break;
 
 		default:
-			printf( "[baseline] returned self\n" );
+			printf( "returned self\n" );
 			ret = tokens;
 			break;
 	}
@@ -230,28 +241,32 @@ parse_node_t *addexpr_stage1( parse_node_t *tokens ){
 	parse_node_t	*ret = NULL,
 			*move = NULL;
 
-	if ( !tokens->next )
+	if ( !tokens || !tokens->next )
 		return NULL;
 
 	tokens->next = reduce( tokens->next );
 
 	switch( tokens->next->type ){
 		case T_ADD_OP:
+			printf( "calling addexpr_stage2\n" );
 			move = addexpr_stage2( tokens );
 			break;
 
 		case T_REL_OP:
+			printf( "calling addexpr_stage3\n" );
 			move = addexpr_stage3( tokens );
 			break;
 
 		default:
+			printf( "Mapping to T_SIMPLE_EXPR... " );
 			ret = maptoken( tokens, T_SIMPLE_EXPR );
+			printf( "Done.\n" );
 			//ret = tokens;
 			break;
 	}
 
-	if ( move ){
-		ret = calloc( 1, sizeof( parse_node_t * ));
+	if ( move && !ret ){
+		ret = calloc( 1, sizeof( parse_node_t ));
 
 		ret->down = tokens;
 		ret->next = move->next;
@@ -263,26 +278,30 @@ parse_node_t *addexpr_stage1( parse_node_t *tokens ){
 }
 
 parse_node_t *addexpr_stage2( parse_node_t *tokens ){
-	printf( "[addexpr_stage2]\n" );
-	parse_node_t	*ret = NULL,
-			*move = NULL;
+	parse_node_t	*ret = NULL;
+
+	//tokens = tokens->next;
+
+	if ( !tokens || !tokens->next )
+		return NULL;
+
+	tokens = tokens->next;
 
 	if ( !tokens->next )
 		return NULL;
 
-	move = tokens->next;
-	if ( !tokens->next->next )
-		return NULL;
+	printf( "[addexpr_stage2] %s, %s\n", 	debug_strings[ tokens->next->type ],
+						debug_strings[ tokens->next->next->type ]);
 
-	tokens->next->next = reduceto( tokens->next->next, T_TERM );
+	tokens->next = reduceto( tokens->next, T_TERM );
 
-	if ( tokens->next->next->type != T_TERM ){
+	if ( tokens->next->type != T_TERM ){
 		dump_tree( 0, tokens );
 		die( 2, "Expected terminal after addition operator, got %s\n",
-			debug_strings[ tokens->next->next->type ] );
+			debug_strings[ tokens->next->type ] );
 	}
 
-	ret = tokens->next->next;
+	ret = tokens->next;
 	ret->status = T_ADD_EXPR;
 
 	return ret;
@@ -290,8 +309,7 @@ parse_node_t *addexpr_stage2( parse_node_t *tokens ){
 
 parse_node_t *addexpr_stage3( parse_node_t *tokens ){
 	printf( "[addexpr_stage3]\n" );
-	parse_node_t	*ret = NULL,
-			*move = NULL;
+	parse_node_t	*ret = NULL;
 
 	if ( !tokens->next )
 		return NULL;
@@ -308,7 +326,7 @@ parse_node_t *addexpr_stage3( parse_node_t *tokens ){
 
 	return ret;
 }
-k
+
 // Parse blocks
 parse_node_t *block_stage1( parse_node_t *tokens ){
 	parse_node_t	*ret = NULL,
@@ -337,8 +355,8 @@ parse_node_t *block_stage1( parse_node_t *tokens ){
 }
 
 parse_node_t *block_stage2( parse_node_t *tokens ){
-	parse_node_t	*ret = NULL,
-			*move = NULL;
+	parse_node_t	*ret = NULL;
+
 	printf( "[block_stage2] %s\n", debug_strings[ tokens->next->type ] );
 
 	//tokens = tokens->next;
@@ -359,8 +377,8 @@ parse_node_t *block_stage2( parse_node_t *tokens ){
 }
 
 parse_node_t *block_stage3( parse_node_t *tokens ){
-	parse_node_t	*ret = NULL,
-			*move = NULL;
+	parse_node_t	*ret = NULL;
+
 	printf( "[block_stage3] %s\n", debug_strings[ tokens->next->type ] );
 	
 	if ( !tokens->next || tokens->next->type != T_STATEMNT_LIST ){
@@ -374,8 +392,8 @@ parse_node_t *block_stage3( parse_node_t *tokens ){
 }
 
 parse_node_t *block_stage4( parse_node_t *tokens ){
-	parse_node_t	*ret = NULL,
-			*move = NULL;
+	parse_node_t	*ret = NULL;
+
 	printf( "[block_stage3]\n" );
 
 	ret = tokens;
@@ -421,8 +439,7 @@ parse_node_t *expr_stage1( parse_node_t *tokens ){
 
 parse_node_t *expr_stage2( parse_node_t *tokens ){
 	printf( "[expr_stage2]\n" );
-	parse_node_t	*ret = NULL,
-			*move = NULL;
+	parse_node_t	*ret = NULL;
 
 	if ( !tokens->next )
 		return NULL;
@@ -439,8 +456,7 @@ parse_node_t *expr_stage2( parse_node_t *tokens ){
 
 parse_node_t *expr_stage3( parse_node_t *tokens ){
 	printf( "[expr_stage3] " );
-	parse_node_t	*ret = NULL,
-			*move = NULL;
+	parse_node_t	*ret = NULL;
 
 	if ( !tokens->next )
 		return NULL;
@@ -465,8 +481,15 @@ parse_node_t *expr_stage3( parse_node_t *tokens ){
 
 // Maps a single token to another token
 parse_node_t *maptoken( parse_node_t *tokens, token_type_t type ){
-	parse_node_t	*ret = NULL,
-			*move = NULL;
+	parse_node_t	*ret = NULL;
+
+	if ( !tokens ){
+		printf( "Well then\n" );
+		return tokens;
+	}
+
+	printf( "[maptoken] %s, mapping to %s, 0x%x\n",	debug_strings[ tokens->type ],
+							debug_strings[ type ], tokens->next );
 
 	ret = calloc( 1, sizeof( parse_node_t ));
 
@@ -539,22 +562,26 @@ parse_node_t *id_stage1( parse_node_t *tokens ){
 			
 	}
 
-	if ( !ret ){
+	//if ( !ret ){
+
+	if ( move ){
 		ret = calloc( 1, sizeof( parse_node_t ));
 
-		if ( move ){
-			ret->type = move->status;
-			ret->down = tokens;
-			ret->next = move->next;
-			move->next = NULL;
-			move->status = T_NULL;
-		} else {
-			ret->down = tokens;
-			ret->next = tokens->next;
-			ret->type = T_PRIMARY;
-			tokens->next = NULL;
-		}
+		ret->type = move->status;
+		ret->down = tokens;
+		ret->next = move->next;
+		move->next = NULL;
+		move->status = T_NULL;
 	}
+	/*
+	else {
+		ret->down = tokens;
+		ret->next = tokens->next;
+		ret->type = T_PRIMARY;
+		tokens->next = NULL;
+	}
+	*/
+	//}
 
 	return ret;
 }
@@ -674,8 +701,7 @@ parse_node_t *id_stage2_3( parse_node_t *tokens ){
 // Parse assignment expression
 parse_node_t *id_stage3( parse_node_t *tokens ){
 	printf( "[id_stage3] %s\n", debug_strings[tokens->type] );
-	parse_node_t	*ret = NULL,
-			*move = NULL;
+	parse_node_t	*ret = NULL;
 
 	if ( !tokens->next ) // wut
 		return NULL;
@@ -700,15 +726,13 @@ parse_node_t *id_stage3( parse_node_t *tokens ){
 }
 
 parse_node_t *id_stage4( parse_node_t *tokens ){
-	parse_node_t	*ret = NULL,
-			*move = NULL;
+	parse_node_t	*ret = NULL;
 
 	return ret;
 }
 
 parse_node_t *id_stage5( parse_node_t *tokens ){
-	parse_node_t	*ret = NULL,
-			*move = NULL;
+	parse_node_t	*ret = NULL;
 
 	return ret;
 }
@@ -751,8 +775,7 @@ parse_node_t *paramdecl_stage1( parse_node_t *tokens ){
 }
 
 parse_node_t *return_stage1( parse_node_t *tokens ){
-	parse_node_t	*ret = NULL,
-			*move = NULL;
+	parse_node_t	*ret = NULL;
 
 	if ( !tokens->next )
 		return NULL;
@@ -854,12 +877,11 @@ parse_node_t *term_stage1( parse_node_t *tokens ){
 		
 		default:
 			ret = maptoken( tokens, T_ADD_EXPR );
-			//ret = tokens;
 			break;
 	}
 
 	if ( move ){
-		ret = calloc( 1, sizeof( parse_node_t * ));
+		ret = calloc( 1, sizeof( parse_node_t ));
 
 		ret->down = tokens;
 		ret->next = move->next;
@@ -872,11 +894,12 @@ parse_node_t *term_stage1( parse_node_t *tokens ){
 
 parse_node_t *term_stage2( parse_node_t *tokens ){
 	printf( "[term_stage2]\n" );
-	parse_node_t	*ret = NULL,
-			*move = NULL;
+	parse_node_t	*ret = NULL;
 
 	if ( !tokens->next )
 		return NULL;
+
+	tokens = tokens->next;
 
 	tokens->next = reduceto( tokens->next, T_FACTOR );
 
@@ -892,8 +915,7 @@ parse_node_t *term_stage2( parse_node_t *tokens ){
 }
 
 parse_node_t *while_stage1( parse_node_t *tokens ){
-	parse_node_t	*ret = NULL,
-			*move = NULL;
+	parse_node_t	*ret = NULL;
 
 	if ( !tokens->next )
 		return NULL;

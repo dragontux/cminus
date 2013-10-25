@@ -3,9 +3,12 @@
 int cline = 1;
 parse_node_t *get_token( FILE *fp ){
 	parse_node_t *ret = NULL;
-	bool	has_token = false,
-		quote	= false,
+	bool	has_token = false;
+		/* TODO: Handle escapes
+		,
+		quote	= false;
 		escape	= false;
+		*/
 	char 	c, 
 		*temp;
 	int 	i,

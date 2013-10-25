@@ -97,6 +97,8 @@ void dump_tree( int level, parse_node_t *token ){
 		if ( move->type == T_NAME )
 			printf( "(%s) ", (char *)move->data );
 
+		//printf( "\t0x%lx ", (unsigned long)token );
+
 		printf( "\n" );
 		
 		if ( move->down )
