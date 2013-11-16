@@ -1,4 +1,4 @@
-CC=gcc
+CC=clang
 CFLAGS=-g -Wall
 
 all: makestuff
@@ -9,7 +9,7 @@ OBJS=$(patsubst %.c,%.o,$(wildcard *c))
 	$(CC) $(CFLAGS) -c $<
 
 makestuff: $(OBJS)
-	gcc $(CFLAGS) -o blarg $(OBJS)
+	$(CC) $(CFLAGS) -o blarg $(OBJS)
 
 clean:
 	rm *.o

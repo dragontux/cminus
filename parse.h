@@ -90,6 +90,14 @@ typedef enum token_type {
 
 } token_type_t;
 
+typedef struct rule {
+	token_type_t	type;
+	token_type_t	ret;
+
+	struct rule	*next;
+	struct rule	*down;
+} rule_t;
+
 typedef struct parse_node {
 	token_type_t		type;
 	unsigned int		status;
@@ -108,10 +116,14 @@ typedef struct parse_node {
 parse_node_t *parse_tokens( parse_node_t * );
 
 
+/*
 parse_node_t *baseline( parse_node_t * );
 parse_node_t *maptoken( parse_node_t *, token_type_t );
 parse_node_t *reduce( parse_node_t * );
 parse_node_t *reduceto( parse_node_t *, token_type_t );
+*/
+parse_node_t *reduce( parse_node_t *, token_type_t );
+parse_node_t *reduceto( parse_node_t *, token_type_t, rule_t * );
 
 // Grammar functions 
 parse_node_t *addexpr_stage1( parse_node_t * );
