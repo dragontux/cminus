@@ -115,7 +115,6 @@ typedef struct parse_node {
 
 parse_node_t *parse_tokens( parse_node_t * );
 
-
 /*
 parse_node_t *baseline( parse_node_t * );
 parse_node_t *maptoken( parse_node_t *, token_type_t );
@@ -123,47 +122,6 @@ parse_node_t *reduce( parse_node_t * );
 parse_node_t *reduceto( parse_node_t *, token_type_t );
 */
 parse_node_t *reduce( parse_node_t *, token_type_t );
-parse_node_t *reduceto( parse_node_t *, token_type_t, rule_t * );
-
-// Grammar functions 
-parse_node_t *addexpr_stage1( parse_node_t * );
-parse_node_t *addexpr_stage2( parse_node_t * );
-parse_node_t *addexpr_stage3( parse_node_t * );
-
-parse_node_t *block_stage1( parse_node_t * );
-parse_node_t *block_stage2( parse_node_t * );
-parse_node_t *block_stage3( parse_node_t * );
-parse_node_t *block_stage4( parse_node_t * );
-
-parse_node_t *expr_stage1( parse_node_t * );
-parse_node_t *expr_stage2( parse_node_t * );
-parse_node_t *expr_stage3( parse_node_t * );
-
-parse_node_t *funcdecl_stage1( parse_node_t * );
-
-parse_node_t *id_stage1( parse_node_t * );
-
-parse_node_t *id_stage2( parse_node_t * );
-parse_node_t *id_stage2_1( parse_node_t * );
-parse_node_t *id_stage2_2( parse_node_t * );
-parse_node_t *id_stage2_2_1( parse_node_t * );
-parse_node_t *id_stage2_3( parse_node_t * );
-
-parse_node_t *id_stage3( parse_node_t * );
-parse_node_t *id_stage4( parse_node_t * );
-parse_node_t *id_stage5( parse_node_t * );
-
-parse_node_t *paramdecl_stage1( parse_node_t * );
-parse_node_t *paramdecl_stage2( parse_node_t * );
-
-parse_node_t *return_stage1( parse_node_t * );
-
-parse_node_t *statelist_stage1( parse_node_t * );
-
-parse_node_t *term_stage1( parse_node_t * );
-parse_node_t *term_stage2( parse_node_t * );
-
-parse_node_t *vardecl_stage1( parse_node_t * );
-parse_node_t *while_stage1( parse_node_t * );
+token_type_t predict( parse_node_t * );
 
 #endif

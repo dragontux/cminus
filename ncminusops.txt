@@ -18,15 +18,15 @@ BNF Grammar for C-Minus
 [ ] 15.  selection-stmt → if ( expression) statement | if ( expression) statement else statement
 [ ] 16.  iteration-stmt → while ( expression) statement
 [ ] 17.  return-stmt → return ; | return expression ;
-[ ] 18.  expression → var = expression | simple-expression
-[ ] 19.  var → ID | ID [ expression ]
-[ ] 20.  simple-expression → additive-expression relop additive-expression | additive-expression
-[ ] 21.  relop → <= | < | > | >= | == | !=
-[ ] 22.  additive-expression → additive-expression addop term | term
-[ ] 23.  addop → + | -
-[ ] 24.  term → term mulop factor | factor
-[ ] 25.  mulop → * | /
-[ ] 26.  factor → ( expression) | var | call | NUM
+[x] 18.  expression → var = expression | simple-expression
+[x] 19.  var → ID | ID [ expression ]
+[x] 20.  simple-expression → additive-expression relop additive-expression | additive-expression
+[~] 21.  relop → <= | < | > | >= | == | !=
+[x] 22.  additive-expression → additive-expression addop term | term
+[x] 23.  addop → + | -
+[x] 24.  term → term mulop factor | factor
+[x] 25.  mulop → * | /
+[~] 26.  factor → ( expression) | var | call | NUM
 [ ] 27.  call → ID ( args)
 [ ] 28.  args → arg-list | empty
 [ ] 29.  arg-list → arg-list , expression | expression
