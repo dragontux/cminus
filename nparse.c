@@ -47,10 +47,10 @@ parse_node_t *baseline_iter( parse_node_t *tokens, rule_t *rules ){
 
 	if ( move ){
 		for ( ; !found && rmove; rmove = rmove->next ){
-			printf( "r: \"%s\", ", type_str( rmove->type ));
+			//printf( "r: \"%s\", ", type_str( rmove->type ));
 			if ( rmove->type == move->type ){
 				type = rmove->ret;
-				printf( "matched. Type set to \"%s\"\n", type_str( type ));
+				//printf( "matched. Type set to \"%s\"\n", type_str( type ));
 
 				if ( rmove->down ){
 					if ( move->next->type != rmove->down->type )
@@ -99,8 +99,10 @@ parse_node_t *baseline( parse_node_t *tokens, rule_t *rules ){
 		ret = temp;
 	} 
 
+	/*
 	if ( ret )
 		printf( "returning \"%s\"\n", type_str( ret->type ));
+	*/
 
 	return ret;
 }
@@ -108,14 +110,12 @@ parse_node_t *baseline( parse_node_t *tokens, rule_t *rules ){
 // Repeatedly reduces until the returning token is either the topmost expression possible, 
 // or until it is of type "type"
 parse_node_t *reduce( parse_node_t *tokens, token_type_t type ){
-	printf( "-=[ Reducing\n" );
 	parse_node_t	*ret = tokens,
 			*move = tokens;
 
 	while (( ret = baseline( move, crules )) && ret != move && ret->type != type )
 		move = ret;
 
-	printf( "-=[ End reduction\n" );
 	return ret;
 }
 
@@ -251,6 +251,10 @@ rule_t *gen_cminus_rules( ){
 			T_NAME, T_PARAM_DECL ),
 				T_SEMICOL, T_VAR_DECL );
 
+	add_down( blarg = add_next( blarg,
+				T_OPEN_BRACK, T_NULL ),
+					T_CLOSE_BRACK, T_PARAM_DECL );
+
 	// handle function declarations
 	add_down( add_down( blarg = add_down( add_next( blarg,
 				T_OPEN_PAREN, T_NULL ),
@@ -261,10 +265,6 @@ rule_t *gen_cminus_rules( ){
 	add_down( add_next( blarg,
 					T_CLOSE_PAREN, T_NULL ),
 						T_COMP_STATEMNT, T_FUN_DECL );
-
-	add_down( temp = add_next( temp,
-			T_EQUALS, T_NULL ),
-				T_EXPR, T_EXPR );
 
 	add_down( add_down( temp = add_next( temp,
 			T_OPEN_BRACK, T_NULL ),
@@ -301,13 +301,6 @@ rule_t *gen_cminus_rules( ){
 		T_PLUS,	T_ADD_OP ),
 		T_MINUS, T_ADD_OP );
 	
-	/*
-	// term = term mulop factor | factor
-	add_down( add_down( move = add_next( move,
-		T_TERM, T_ADD_EXPR ),
-			T_MUL_OP, T_NULL ),
-				T_FACTOR, T_TERM );
-	*/
 	move = add_next( move,
 		T_TERM, T_ADD_EXPR );
 
@@ -322,21 +315,17 @@ rule_t *gen_cminus_rules( ){
 		T_STAR, T_MUL_OP ),
 		T_SLASH, T_MUL_OP );
 
-	// factor -> NUM | var
-	move = add_next( add_next( add_next( add_next( move,
-		T_INT, T_FACTOR ),
+	add_down( add_down( move = add_next( move,
 		T_VAR, T_FACTOR ),
+			T_EQUALS, T_NULL ),
+				T_EXPR, T_EXPR );
+
+	// factor -> NUM | var | call | string
+	move = add_next( add_next( add_next( move,
+		T_INT, T_FACTOR ),
 		T_CALL, T_FACTOR ),
 		T_STRING, T_FACTOR );
 
-	/*
-	// arg-list = 
-	add_down( add_down( move = add_next( move,
-		T_ARGS_LIST, T_NULL ),
-			T_COMMA, T_NULL ),
-				T_ARGS_LIST, T_ARGS_LIST );
-
-	*/
 	ret = buf.next;
 	
 	return ret;
