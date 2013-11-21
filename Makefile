@@ -9,9 +9,9 @@ OBJS=$(patsubst %.c,%.o,$(wildcard *c))
 	$(CC) $(CFLAGS) -c $<
 
 makestuff: $(OBJS)
-	$(CC) $(CFLAGS) -o blarg $(OBJS)
+	$(CC) $(CFLAGS) -o cminus $(OBJS)
 
 clean:
-	rm *.o
+	rm *.o cminus
 
 .PHONY: all
