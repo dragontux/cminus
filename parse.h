@@ -52,15 +52,13 @@ typedef enum token_type {
 	// Parsing types, used for parsing trees
 	T_PROGRAM,
 
-	T_VAR_DECL_LIST,
+	T_DECL_LIST,
+	T_DECL,
 	T_VAR_DECL,
+	T_FUN_DECL,
 	T_VAR,
 
-	T_FUN_DECL_LIST,
-	T_FUN_DECL,
-
 	T_PARAM_DECL_LIST,
-	T_PARAM_DECL_LIST_TAIL,
 	T_PARAM_DECL,
 
 	T_BLOCK,
@@ -90,6 +88,8 @@ typedef enum token_type {
 	T_ADD_OP,
 	T_MUL_OP,
 	T_REL_OP,
+
+	T_ARGS_LIST,
 
 	T_ENDTYPE,
 
@@ -128,5 +128,6 @@ parse_node_t *reduceto( parse_node_t *, token_type_t );
 */
 parse_node_t *reduce( parse_node_t *, token_type_t );
 token_type_t predict( parse_node_t * );
+rule_t *gen_cminus_rules( );
 
 #endif
