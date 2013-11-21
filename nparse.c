@@ -21,6 +21,7 @@ char *type_str( token_type_t type ){
 	return debug_strings[ type ];
 }
 
+// Debugging function, to make sure the rule tables are being generated properly
 void dump_rules( int level, rule_t *rules ){
 	if ( rules ){
 		int i;
@@ -33,8 +34,7 @@ void dump_rules( int level, rule_t *rules ){
 	}
 }
 
-// Long code, but mostly uninteresting. Generates a tree of rules for use
-// by the baseline( ) function.
+// Generates parsing rules for c--
 rule_t *gen_cminus_rules( ){
 	rule_t	*ret = NULL,
 		*move = NULL,
@@ -64,7 +64,7 @@ rule_t *gen_cminus_rules( ){
 
 	// add_expr = add_expr addop term | term
 	add_down( temp = add_down( move = add_next( move,
-		T_ADD_EXPR, T_NULL/*T_SIMPLE_EXPR*/ ), 
+		T_ADD_EXPR, T_SIMPLE_EXPR ), 
 			T_REL_OP, T_NULL ), 
 				T_ADD_EXPR, T_SIMPLE_EXPR );
 
@@ -101,75 +101,86 @@ rule_t *gen_cminus_rules( ){
 	return ret;
 }
 
-parse_node_t *baseline( parse_node_t *tokens ){
+// Returns the last node in a reduction, with the status set to the returning type
+parse_node_t *baseline_iter( parse_node_t *tokens, rule_t *rules ){
 	parse_node_t	*ret,
-			*move,
-			*temp;
-	token_type_t 	type;
-	rule_t		*ruleptr,
-			*rmove;
+			*move;
+	token_type_t	type;
+	rule_t		*rmove;
 
 	ret = move = tokens;
-	rmove = ruleptr = crules;
-	type = T_NULL;
+	rmove = rules;
+	int found = 0;
 
-	while ( move && rmove ){
-		for ( ; rmove; rmove = rmove->next ){
+	if ( move ){
+		for ( ; !found && rmove; rmove = rmove->next ){
+			printf( "r: \"%s\", ", type_str( rmove->type ));
 			if ( rmove->type == move->type ){
 				type = rmove->ret;
+				printf( "matched. Type set to \"%s\"\n", type_str( type ));
 
 				if ( rmove->down ){
-					if ( !move->next )
-						die( 2, "Expected token\n" );
-
 					move->next = reduce( move->next, rmove->down->type );
-					if ( move->next->type != rmove->down->type )
-						continue;
-
-					rmove = rmove->down;
-					break;
+					ret = baseline_iter( move->next, rmove->down );
+					if ( ret->status == T_NULL && type != T_NULL ){
+						ret = move;
+						ret->status = type;
+					}
 				} else {
-					printf( "No down rule.\n" );
+					move->status = type;
+					ret = move;
 				}
-			}
-		}
 
-		if ( rmove ){
-			move = move->next;
+				found = 1;
+				break;
+			}
 		}
 	}
 
-	if ( type != T_NULL ){
-		temp = calloc( 1, sizeof( parse_node_t ));
-		temp->type = type;
-		temp->down = ret;
-		temp->next = move->next;
-
-		move->next = NULL;
-		ret = temp;
-	} 
-
-	printf( "returning \"%s\"\n", type_str( ret->type ));
 	return ret;
 }
 
+// Performs one round of reduction
+parse_node_t *baseline( parse_node_t *tokens, rule_t *rules ){
+	parse_node_t	*ret,
+			*move,
+			*temp;
+	rule_t		*rmove;
+
+	ret = move = tokens;
+	rmove = rules;
+
+	move = baseline_iter( move, rules );
+
+	if ( move->status != T_NULL ){
+		temp = calloc( 1, sizeof( parse_node_t ));
+		temp->type = move->status;
+		temp->down = ret;
+
+		temp->next = move->next;
+		move->next = NULL;
+		move->status = T_NULL;
+
+		ret = temp;
+	} 
+
+	if ( ret )
+		printf( "returning \"%s\"\n", type_str( ret->type ));
+
+	return ret;
+}
+
+// Repeatedly reduces until the returning token is either the topmost expression possible, 
+// or until it is of type "type"
 parse_node_t *reduce( parse_node_t *tokens, token_type_t type ){
+	printf( "-=[ Reducing\n" );
 	parse_node_t	*ret = tokens,
 			*move = tokens;
 
-	while (( ret = baseline( move )) && ret != move && ret->type != type )
+	while (( ret = baseline( move, crules )) && ret != move && ret->type != type )
 		move = ret;
 
-	//ret = ret? ret : move;
-
-	/*
-	move = NULL;
-	while ( ret && ret->type == type && predict( ret ) == type && ret != move ){
-		move = ret;
-		ret = baseline( ret );
-	}
-	*/
-
+	printf( "-=[ End reduction\n" );
 	return ret;
 }
 
@@ -185,61 +196,3 @@ parse_node_t *parse_tokens( parse_node_t *tokens ){
 
 	return ret;
 }
-
-/* // Keep this around in case it's needed in the future
-token_type_t predict( parse_node_t *tokens ){
-	parse_node_t	*move;
-			// *temp;
-	token_type_t 	ret,
-			type;
-	rule_t		*ruleptr,
-			*rmove;
-
-	move = tokens;
-	rmove = ruleptr = crules;
-	type = T_NULL;
-
-	// Iterate through tokens until end of the rule branch
-	while ( move && rmove ){
-		printf( "-=[predict] move->type: \"%s\"\n", type_str( move->type ));
-
-		// Iterate through current level of rules
-		for ( ; rmove; rmove = rmove->next ){
-			if ( rmove->type == move->type ){
-				printf( "\tMatched type \"%s\"...\n", type_str( rmove->type ));
-
-				type = rmove->ret;
-				printf( "\tType set to %s\n", type_str( type ));
-
-				if ( rmove->down ){
-					printf( "\tDescended...\n" );
-					if ( !move->next )
-						break;
-
-					if ( move->next->type != rmove->down->type )
-						continue;
-
-					rmove = rmove->down;
-					break;
-				} else {
-					printf( "\tNo down rule.\n" );
-				}
-			}
-		}
-
-		if ( rmove ){
-			printf( "\tContinuing to next token\n" );
-			move = move->next;
-		}
-	}
-
-	if ( type == T_NULL )
-		type = tokens->type;
-
-	ret = type;
-
-	printf( "\tPredicted \"%s\"\n", type_str( ret ));
-
-	return ret;
-}
-*/
