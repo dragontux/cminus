@@ -1,17 +1,17 @@
 #include "debug.h"
 
 char *debug_strings[] = {
-	// EOF type
+	// EOF "type"
 	"T_NULL",
 
-	// Variable types recognized by lexer
+	// Variable "types" recognized by lexer
 	"T_INT",
 	"T_DOUBLE",
 	"T_STRING",
 	"T_CHAR",
 	"T_NAME",
 
-	// Control types, also recognized by lexer
+	// Con"trol" "types", also recognized by lexer
 	"T_IF",
 	"T_ELSE",
 	"T_WHILE",
@@ -19,7 +19,7 @@ char *debug_strings[] = {
 	"T_SWITCH",
 	"T_RETURN",
 
-	// Punctuation
+	// Punc"tuation"
 	"T_OPEN_PAREN",
 	"T_OPEN_BRACK",
 	"T_OPEN_CURL",
@@ -44,7 +44,7 @@ char *debug_strings[] = {
 
 	"T_EQUALS",
 
-	// Parsing types, used for parsing trees
+	// Parsing "types", used for parsing "trees"
 	"T_PROGRAM",
 
 	"T_VAR_DECL_LIST",
@@ -62,7 +62,12 @@ char *debug_strings[] = {
 	"T_TYPE",
 	"T_STATEMNT_LIST",
 	"T_STATEMNT",
-	"T_PRIMARY",
+
+	"T_EXPR_STATEMNT",
+	"T_COMP_STATEMNT",
+	"T_SELECT_STATEMNT",
+	"T_ITER_STATEMNT",
+	"T_RETURN_STATEMNT",
 
 	"T_EXPR",
 	"T_EXPR_LIST",
@@ -82,7 +87,6 @@ char *debug_strings[] = {
 	"T_REL_OP",
 
 	"T_ENDTYPE",
-
 };
 
 void dump_tree( int level, parse_node_t *token ){
@@ -107,4 +111,3 @@ void dump_tree( int level, parse_node_t *token ){
 		move = move->next;
 	}
 }
-

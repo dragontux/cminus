@@ -43,12 +43,83 @@ rule_t *gen_cminus_rules( ){
 
 	move = &buf;
 
+	// compound-stmt = { local-decl statement-list } | { statement-list }
+	add_down( temp = add_down( move = add_next( move,
+		T_OPEN_CURL, T_NULL ),
+			T_STATEMNT_LIST, T_NULL ),
+				T_CLOSE_CURL, T_COMP_STATEMNT );
+
+	// statement-list = statement statemnt-list | statement
+	add_down( move = add_next( move,
+		T_STATEMNT, T_STATEMNT_LIST ),
+			T_STATEMNT_LIST, T_STATEMNT_LIST );
+
+	// statement = expr-stmt | comp-stmt | select-stmt | iter-stmt | return-stmt
+	move = add_next( move,
+		T_EXPR_STATEMNT, T_STATEMNT );
+
+	move = add_next( move,
+		T_COMP_STATEMNT, T_STATEMNT );
+
+	move = add_next( move,
+		T_SELECT_STATEMNT, T_STATEMNT );
+
+	move = add_next( move,
+		T_ITER_STATEMNT, T_STATEMNT );
+
+	move = add_next( move,
+		T_RETURN_STATEMNT, T_STATEMNT );
+
+	// expression-stmt = expression ; | ;
+	add_down( move = add_next( move,
+		T_EXPR,	T_NULL ),
+			T_SEMICOL, T_EXPR_STATEMNT );
+
+	/*
+	move = add_next( move, 
+		T_SEMICOL, T_EXPR_STATEMNT );
+	*/
+
+	// select-stmt = if ( expression ) statemnt | if ( expression ) statement else statemnt
+	add_down( add_down( add_down( add_down( add_down( add_down( move = add_next( move,
+		T_IF, T_NULL ),
+			T_OPEN_PAREN, T_NULL ),
+				T_EXPR, T_NULL ),
+					T_CLOSE_PAREN, T_NULL ),
+						T_STATEMNT, T_SELECT_STATEMNT ),
+							T_ELSE, T_NULL ),
+								T_STATEMNT, T_SELECT_STATEMNT );
+
+	// iter-stmt = while ( expression ) statement
+	add_down( add_down( add_down( add_down( move = add_next( move,
+		T_WHILE, T_NULL ),
+			T_OPEN_PAREN, T_NULL ),
+				T_EXPR, T_NULL ),
+					T_CLOSE_PAREN, T_NULL ),
+						T_STATEMNT, T_ITER_STATEMNT );
+
+	// return-stmt = return ; | return expression ;
+	add_down( temp = add_down( move = add_next( move,
+		T_RETURN, T_NULL ),
+			T_EXPR, T_NULL ),
+				T_SEMICOL, T_RETURN_STATEMNT );
+
+	add_next( temp,
+			T_SEMICOL, T_RETURN_STATEMNT );
+
+
+	// expresson = simple_expr
 	move = add_next( move,
 		T_SIMPLE_EXPR, T_EXPR );
 
 	// var = id | id [ expression ]
 	add_down( temp = add_down( move = add_next( move,
+		// Handle variable declarations
 		T_NAME, T_VAR ),
+			T_NAME, T_NULL ),
+				T_SEMICOL, T_VAR_DECL );
+
+	add_down( temp = add_next( temp,
 			T_EQUALS, T_NULL ),
 				T_EXPR, T_EXPR );
 
@@ -120,7 +191,9 @@ parse_node_t *baseline_iter( parse_node_t *tokens, rule_t *rules ){
 				printf( "matched. Type set to \"%s\"\n", type_str( type ));
 
 				if ( rmove->down ){
-					move->next = reduce( move->next, rmove->down->type );
+					if ( move->next->type != rmove->down->type )
+						move->next = reduce( move->next, rmove->down->type );
+
 					ret = baseline_iter( move->next, rmove->down );
 					if ( ret->status == T_NULL && type != T_NULL ){
 						ret = move;
