@@ -125,8 +125,8 @@ parse_node_t *parse_tokens( parse_node_t *tokens ){
 	if ( !crules )
 		crules = gen_cminus_rules( );
 
-	printf( "-=[ Rules dump: \n" );
-	dump_rules( 0, crules );
+	//printf( "-=[ Rules dump: \n" );
+	//dump_rules( 0, crules );
 	ret = reduce( tokens, T_PROGRAM );
 
 	return ret;
@@ -325,6 +325,13 @@ rule_t *gen_cminus_rules( ){
 		T_INT, T_FACTOR ),
 		T_CALL, T_FACTOR ),
 		T_STRING, T_FACTOR );
+
+	/*
+	add_down( add_down( move = add_next( move,
+		T_OPEN_PAREN, T_NULL ),
+			T_EXPR, T_NULL ),
+				T_CLOSE_PAREN, T_FACTOR );
+	*/
 
 	ret = buf.next;
 	
