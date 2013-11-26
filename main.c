@@ -15,6 +15,7 @@ void do_help( char **argv ){
 int main( int argc, char *argv[] ){
 	parse_node_t *meh, *move;
 	char	*filename = NULL,
+		*backend = "x86",
 		c;
 	FILE	*fp;
 	int	i = 0,
@@ -26,10 +27,13 @@ int main( int argc, char *argv[] ){
 		return 0;
 	}
 
-	while (( c = getopt( argc, argv, "f:plh" )) != -1 && i++ < argc ){
+	while (( c = getopt( argc, argv, "f:b:plh" )) != -1 && i++ < argc ){
 		switch( c ){
 			case 'f':
 				filename = argv[++i];
+				break;
+			case 'b':
+				backend = argv[++i];
 				break;
 			case 'h':
 				do_help( argv );
@@ -63,6 +67,13 @@ int main( int argc, char *argv[] ){
 		printf( "-=[ Parse tree dump: \n" );
 		dump_tree( 0, move );
 	}
+
+	// This will do for now
+	i = 0;
+	if ( strcmp( backend, "x86" ) == 0 )
+		i = x86_codegen( move );
+	else
+		die( 1, "Unknown backend \"%s\"\n", backend );
 
 	return 0;
 }
