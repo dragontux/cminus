@@ -4,6 +4,7 @@
 #include "parse.h"
 #include "lex.h"
 #include "debug.h"
+#include "codegen.h"
 
 void do_help( char **argv ){
 	printf( "Usage: %s [-f file] [-h]\n"
@@ -13,7 +14,10 @@ void do_help( char **argv ){
 }
 
 int main( int argc, char *argv[] ){
-	parse_node_t *meh, *move;
+	parse_node_t 	*meh,
+			*move;
+	tac_t 		*tac;
+
 	char	*filename = NULL,
 		*backend = "x86",
 		c;
@@ -68,12 +72,16 @@ int main( int argc, char *argv[] ){
 		dump_tree( 0, move );
 	}
 
+	tac = ptree_to_tlist( move );
+
+	/*
 	// This will do for now
 	i = 0;
 	if ( strcmp( backend, "x86" ) == 0 )
-		i = x86_codegen( move );
+		i = x86_codegen( );
 	else
 		die( 1, "Unknown backend \"%s\"\n", backend );
+	*/
 
 	return 0;
 }

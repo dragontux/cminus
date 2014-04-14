@@ -107,6 +107,23 @@ parse_node_t *baseline( parse_node_t *tokens, rule_t *rules ){
 	return ret;
 }
 
+int has_higher_prec( token_type_t top, token_type_t bottom, rule_t *rules ){
+	rule_t *ruleptr = rules;
+	int ret, found;
+
+	for ( ret = found = 0; !found && ruleptr->next; ruleptr = ruleptr->next ){
+		if ( ruleptr->type == top ){
+			ret = 1;
+			found = 1;
+		} else if ( ruleptr->type == bottom ){
+			ret = 0;
+			found = 1;
+		}
+	}
+
+	return ret;
+}
+
 // Repeatedly reduces until the returning token is either the topmost expression possible, 
 // or until it is of type "type"
 parse_node_t *reduce( parse_node_t *tokens, token_type_t type ){
