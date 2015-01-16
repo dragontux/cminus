@@ -1,92 +1,92 @@
 #include "debug.h"
 
 char *debug_strings[] = {
-	// EOF "type"
-	"T_NULL",
+	// eof "type"
+	"null",
 
-	// Variable "types" recognized by lexer
-	"T_INT",
-	"T_DOUBLE",
-	"T_STRING",
-	"T_CHAR",
-	"T_NAME",
+	// variable types recognized by lexer
+	"int",
+	"double",
+	"string",
+	"char",
+	"name",
 
-	// Con"trol" "types", also recognized by lexer
-	"T_IF",
-	"T_ELSE",
-	"T_WHILE",
-	"T_FOR",
-	"T_SWITCH",
-	"T_RETURN",
+	// control types, also recognized by lexer
+	"if",
+	"else",
+	"while",
+	"for",
+	"switch",
+	"return",
 
-	// Punc"tuation"
-	"T_OPEN_PAREN",
-	"T_OPEN_BRACK",
-	"T_OPEN_CURL",
-	"T_CLOSE_PAREN",
-	"T_CLOSE_BRACK",
-	"T_CLOSE_CURL",
-	"T_LESS_THAN",
-	"T_GREATER_THAN",
+	// punctuation
+	"open_paren",
+	"open_brack",
+	"open_curl",
+	"close_paren",
+	"close_brack",
+	"close_curl",
+	"less_than",
+	"greater_than",
 
-	"T_PERIOD",
-	"T_COMMA",
-	"T_SEMICOL",
-	"T_COLON",
+	"period",
+	"comma",
+	"semicol",
+	"colon",
 
-	"T_AMP",
-	"T_PIPE",
-	"T_EXCLAIM",
-	"T_PLUS",
-	"T_MINUS",
-	"T_SLASH",
-	"T_STAR",
+	"amp",
+	"pipe",
+	"exclaim",
+	"plus",
+	"minus",
+	"slash",
+	"star",
 
-	"T_EQUALS",
+	"equals",
 
-	// Parsing "types", used for parsing "trees"
-	"T_PROGRAM",
+	// parsing types, used for parsing trees
+	"program",
 
-	"T_DECL_LIST",
-	"T_DECL",
-	"T_VAR_DECL",
-	"T_FUN_DECL",
-	"T_VAR",
+	"decl_list",
+	"decl",
+	"var_decl",
+	"fun_decl",
+	"var",
 
-	"T_PARAM_DECL_LIST",
-	"T_PARAM_DECL",
+	"param_decl_list",
+	"param_decl",
 
-	"T_BLOCK",
-	"T_TYPE",
-	"T_STATEMNT_LIST",
-	"T_STATEMNT",
+	"block",
+	"type",
+	"statement_list",
+	"statement",
 
-	"T_EXPR_STATEMNT",
-	"T_COMP_STATEMNT",
-	"T_SELECT_STATEMNT",
-	"T_ITER_STATEMNT",
-	"T_RETURN_STATEMNT",
+	"expr_statement",
+	"comp_statement",
+	"selecstatement",
+	"iter_statement",
+	"return_statement",
 
-	"T_EXPR",
-	"T_EXPR_LIST",
-	"T_EXPR_LIST_TAIL",
-	"T_SIMPLE_EXPR",
-	"T_ADD_EXPR",
+	"expr",
+	"expr_list",
+	"expr_list_tail",
+	"simple_expr",
+	"add_expr",
 
-	"T_TERM",
-	"T_FACTOR",
-	"T_CALL",
+	"term",
+	"factor",
+	"call",
 
-	"T_UNARY_OP",
-	"T_BIN_OP",
+	"unary_op",
+	"bin_op",
 
-	"T_ADD_OP",
-	"T_MUL_OP",
-	"T_REL_OP",
+	"add_op",
+	"mul_op",
+	"rel_op",
 
-	"T_ARGS_LIST",
+	"args_list",
 
-	"T_ENDTYPE",
+	"endtype",
 };
 
 void dump_tree( int level, parse_node_t *token ){
@@ -94,19 +94,21 @@ void dump_tree( int level, parse_node_t *token ){
 	int i;
 
 	while( move ){
+		printf( "\n" );
 		for ( i = 0; i < level; i++ )
 			printf( "    " );
 
-		printf( "%s ", debug_strings[ move->type ] );
+		printf( "(%s", debug_strings[ move->type ] );
 		if ( move->type == T_NAME )
-			printf( "(%s) ", (char *)move->data );
+			printf( " (%s)", (char *)move->data );
 
 		//printf( "\t0x%lx ", (unsigned long)token );
 
-		printf( "\n" );
-		
-		if ( move->down )
+		if ( move->down ){
 			dump_tree( level + 1, move->down );
+		}
+
+		printf( ")" );
 
 		move = move->next;
 	}

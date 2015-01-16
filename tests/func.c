@@ -6,7 +6,8 @@ int func( int test, char this[] ){
 		this = this + test - 1;
 	}
 
-	return 1;
+	return length( print( this ));
+
 }
 
 int woot( int a ){
