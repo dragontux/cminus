@@ -63,7 +63,7 @@ char *debug_strings[] = {
 
 	"expr_statement",
 	"comp_statement",
-	"selecstatement",
+	"select_statement",
 	"iter_statement",
 	"return_statement",
 
@@ -101,6 +101,9 @@ void dump_tree( int level, parse_node_t *token ){
 		printf( "(%s", debug_strings[ move->type ] );
 		if ( move->type == T_NAME )
 			printf( " (%s)", (char *)move->data );
+
+		else if ( move->type == T_INT )
+			printf( " (%d)", *(int *)move->data );
 
 		//printf( "\t0x%lx ", (unsigned long)token );
 
