@@ -348,19 +348,30 @@ unsigned handle_expression( parse_node_t *tree, unsigned address, gen_state_t *s
 	printf( "%4d > ", address );
 	printf( "    mov rbx, rax\n" );
 
+	printf( "%4d > ", address );
+	printf( "    push rbx\n" );
+
 	op2 = blarg( tree->down->next->next, address + 1, state );
 	address = op2 + 1;
+
+	printf( "%4d > ", address );
+	printf( "    pop rbx\n" );
+
+	printf( "%4d > ", address );
+	printf( "    mov rcx, rax\n" );
 
 	switch( tree->down->next->type ){
 		case T_PLUS:
 			printf( "%4d > ", address );
-			printf( "    add rax, rbx\n" );
+			printf( "    add rcx, rbx\n" );
+			printf( "%4d > ", address );
+			printf( "    mov rax, rcx\n" );
 			address++;
 		break;
 
 		case T_MINUS:
 			printf( "%4d > ", address );
-			printf( "    sub rbx, rax\n" );
+			printf( "    sub rbx, rcx\n" );
 			printf( "%4d > ", address );
 			printf( "    mov rax, rbx\n" );
 			address++;
@@ -473,7 +484,7 @@ unsigned handle_name( parse_node_t *tree, unsigned address, gen_state_t *state )
 
 			case VAR_PLACE_PARAMETER:
 				printf( "%4d > ", address );
-				printf( "    mov rax, [rbp-%u]\n", name->number * 8 );
+				printf( "    mov rax, [rbp+%u]\n", (name->number + 1) * 8 );
 				break;
 
 			case VAR_PLACE_LOCAL:
