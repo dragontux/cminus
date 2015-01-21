@@ -2,6 +2,15 @@ int add( int a, int b ){
 	return a + b;
 }
 
+int self( int i, int b ){
+	return i + b;
+}
+
 int main( ){
-	return 10 + 20 - add( 1, 2 );
+	if ( 1 ){
+		return 10 + add( 50, 100 );
+
+	} else {
+		return 1;
+	}
 }
