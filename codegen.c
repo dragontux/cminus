@@ -189,7 +189,7 @@ unsigned handle_var_decl( parse_node_t *tree, unsigned address, gen_state_t *sta
 		printf( "global %s\n", tree->down->next->data );
 
 		printf( "    ;%4d > \n", address );
-		printf( "%s: dq 0 ; %s\n",
+		printf( "%s: resq 1 ; %s\n",
 				tree->down->next->data, tree->down->data );
 
 		new_name->type = tree->down->data;
@@ -336,53 +336,101 @@ unsigned handle_iter_statement( parse_node_t *tree, unsigned address, gen_state_
 	return address;
 }
 
+unsigned handle_assignment_expression(
+		parse_node_t *tree, unsigned address, gen_state_t *state )
+{
+	unsigned op;
+
+	// TODO: Make sure that tree->down->data is actually a name symbol,
+	//       just in case
+	name_decl_t *name = find_name( tree->down->data, state );
+
+	if ( name ){
+		op = blarg( tree->down->next->next, address + 1, state );
+		address = op + 1;
+
+		switch( name->placement ){
+			case VAR_PLACE_GLOBAL:
+				printf( "    ;%4d > \n", address );
+				printf( "    mov [%s], rax\n", tree->down->data );
+				break;
+
+			case VAR_PLACE_PARAMETER:
+				printf( "    ;%4d > \n", address );
+				printf( "    mov [rbp+%u], rax\n", (name->number + 1) * 8 );
+				break;
+
+			case VAR_PLACE_LOCAL:
+				printf( "    ;%4d > \n", address );
+				printf( "    mov [rbp-%u], rax\n", name->number * 8 );
+				break;
+
+			default:
+				break;
+		}
+
+		printf( "    ;%4d > \n", address );
+		printf( "    ; End of expression, op are %u\n", op );
+	}
+
+	return address;
+}
+
 unsigned handle_expression( parse_node_t *tree, unsigned address, gen_state_t *state ){
 	unsigned op1, op2;
 
 	printf( "    ;%4d > \n", address );
 	printf( "    ; Have expression, operation is %s\n", type_str( tree->down->next->type ));
 
-	op1 = blarg( tree->down, address + 1, state );
-	address = op1 + 1;
+	if ( tree->down->next->type == T_EQUALS ){
+		address = handle_assignment_expression( tree, address + 1, state );
+		
+	} else {
+		op1 = blarg( tree->down, address + 1, state );
+		address = op1 + 1;
 
-	printf( "    ;%4d > \n", address );
-	printf( "    mov rbx, rax\n" );
+		printf( "    ;%4d > \n", address );
+		printf( "    mov rbx, rax\n" );
 
-	printf( "    ;%4d > \n", address );
-	printf( "    push rbx\n" );
+		printf( "    ;%4d > \n", address );
+		printf( "    push rbx\n" );
 
-	op2 = blarg( tree->down->next->next, address + 1, state );
-	address = op2 + 1;
+		op2 = blarg( tree->down->next->next, address + 1, state );
+		address = op2 + 1;
 
-	printf( "    ;%4d > \n", address );
-	printf( "    pop rbx\n" );
+		printf( "    ;%4d > \n", address );
+		printf( "    pop rbx\n" );
 
-	printf( "    ;%4d > \n", address );
-	printf( "    mov rcx, rax\n" );
+		printf( "    ;%4d > \n", address );
+		printf( "    mov rcx, rax\n" );
 
-	switch( tree->down->next->type ){
-		case T_PLUS:
-			printf( "    ;%4d > \n", address );
-			printf( "    add rcx, rbx\n" );
-			printf( "    ;%4d > \n", address );
-			printf( "    mov rax, rcx\n" );
-			address++;
-		break;
+		switch( tree->down->next->type ){
+			case T_PLUS:
+				printf( "    ;%4d > \n", address );
+				printf( "    add rcx, rbx\n" );
+				printf( "    ;%4d > \n", address );
+				printf( "    mov rax, rcx\n" );
+				address++;
+				break;
 
-		case T_MINUS:
-			printf( "    ;%4d > \n", address );
-			printf( "    sub rbx, rcx\n" );
-			printf( "    ;%4d > \n", address );
-			printf( "    mov rax, rbx\n" );
-			address++;
-			break;
+			case T_MINUS:
+				printf( "    ;%4d > \n", address );
+				printf( "    sub rbx, rcx\n" );
+				printf( "    ;%4d > \n", address );
+				printf( "    mov rax, rbx\n" );
+				address++;
+				break;
 
-		default:
-			break;
+			case T_EQUALS:
+				break;
+
+			default:
+				break;
+		}
+
+		printf( "    ;%4d > \n", address );
+		printf( "    ; End of expression, ops are %u and %u\n", op1, op2 );
 	}
-
-	printf( "    ;%4d > \n", address );
-	printf( "    ; End of expression, ops are %u and %u\n", op1, op2 );
 
 	return address;
 }
