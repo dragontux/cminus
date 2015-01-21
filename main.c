@@ -7,31 +7,35 @@
 #include "codegen.h"
 
 void do_help( char **argv ){
-	printf( "Usage: %s [-f file] [-h]\n"
-		"	-f:	Specify input code file\n"
-		"	-h:	Show this help and exit\n", argv[0] 
+	printf( "Usage: %s [-fo file] [-b backend] [-hlp]\n"
+		"\t-f:\tSpecify input code file\n"
+		"\t-o:\tSpecify file to write output assembly to\n"
+		"\t-b:\tSpecify the code generation backend to use\n"
+		"\t-h:\tShow this help and exit\n"
+		"\t-l:\tDisplay the lexer output for the input code\n"
+		"\t-p:\tDisplay the parse tree for the input code\n", argv[0] 
 	);
 }
 
 int main( int argc, char *argv[] ){
-	parse_node_t 	*meh,
-			*move;
-	tac_t 		*tac;
+	parse_node_t *meh;
+	parse_node_t *move;
 
-	char	*filename = NULL,
-		*backend = "x86",
-		c;
-	FILE	*fp;
-	int	i = 0,
-		lex_dump = 0,
-		parse_dump = 0;
+	FILE *fp;
+	char *filename = NULL;
+	char *output_name = "testout.s";
+	char *backend = "default";
+	char c;
+	int	i = 0;
+	int lex_dump = 0;
+	int parse_dump = 0;
 
 	if ( argc < 2 ){
 		do_help( argv );
 		return 0;
 	}
 
-	while (( c = getopt( argc, argv, "f:b:plh" )) != -1 && i++ < argc ){
+	while (( c = getopt( argc, argv, "f:b:o:plh" )) != -1 && i++ < argc ){
 		switch( c ){
 			case 'f':
 				filename = argv[++i];
@@ -48,6 +52,9 @@ int main( int argc, char *argv[] ){
 				break;
 			case 'p':
 				parse_dump = 1;
+				break;
+			case 'o':
+				output_name = argv[++i];
 				break;
 		}
 	}
@@ -72,16 +79,12 @@ int main( int argc, char *argv[] ){
 		dump_tree( 0, move );
 	}
 
-	tac = ptree_to_tlist( move );
+	if ( strcmp( backend, "default" ) == 0 || strcmp( backend, "nasm_x86_64" ) == 0 ){
+		generate_output_asm( move, output_name );
 
-	/*
-	// This will do for now
-	i = 0;
-	if ( strcmp( backend, "x86" ) == 0 )
-		i = x86_codegen( );
-	else
+	} else {
 		die( 1, "Unknown backend \"%s\"\n", backend );
-	*/
+	}
 
 	return 0;
 }

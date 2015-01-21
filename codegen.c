@@ -597,8 +597,7 @@ unsigned gen_code( parse_node_t *tree, unsigned address, gen_state_t *state, FIL
 	return address;
 }
 
-tac_t *ptree_to_tlist( parse_node_t *tree ){
-	tac_t *ret = NULL;
+void generate_output_asm( parse_node_t *tree, char *name ){
 	parse_node_t *wut = clone_tree( tree );
 	gen_state_t state;
 
@@ -625,9 +624,7 @@ tac_t *ptree_to_tlist( parse_node_t *tree ){
 
 	memset( &state, 0, sizeof( state ));
 
-	FILE *meh = fopen( "testout.s", "w" );
+	FILE *meh = fopen( name, "w" );
 	fprintf( meh, "BITS 64\n" );
 	gen_code( wut, 0, &state, meh );
-
-	return ret;
 }
