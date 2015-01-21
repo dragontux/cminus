@@ -149,31 +149,31 @@ void free_namelist( name_decl_t *namelist ){
 	}
 }
 
-unsigned blarg( parse_node_t *tree, unsigned address, gen_state_t *state );
+unsigned blarg( parse_node_t *tree, unsigned address, gen_state_t *state, FILE *fp );
 
-unsigned handle_decl_list( parse_node_t *tree, unsigned address, gen_state_t *state ){
-	address = blarg( tree->down, address + 1, state );
-	address = blarg( tree->next, address + 1, state );
+unsigned handle_decl_list( parse_node_t *tree, unsigned address, gen_state_t *state, FILE *fp ){
+	address = blarg( tree->down, address + 1, state, fp );
+	address = blarg( tree->next, address + 1, state, fp );
 
 	return address;
 }
 
-unsigned handle_var_decl( parse_node_t *tree, unsigned address, gen_state_t *state ) {
+unsigned handle_var_decl( parse_node_t *tree, unsigned address, gen_state_t *state, FILE *fp ) {
 	name_decl_t *new_name = calloc( 1, sizeof( name_decl_t ));
 	name_decl_t *move;
 
 	move = find_name_no_recurse( tree->down->next->data, state );
 
 	if ( move ){
-		printf( "Error: symbol \"%s\" already defined in this scope\n", tree->down->next->data );
+		fprintf( stderr, "Error: symbol \"%s\" already defined in this scope\n", tree->down->next->data );
 	}
 
-	printf( "    ;%4d > \n", address );
+//	fprintf( fp, "    ;%4d > \n", address );
 
 	state->num_vars++;
 
 	if ( state->flags & STATE_IN_FUNCTION ){
-		printf( "    sub rsp, 8 ; %s %s\n",
+		fprintf( fp, "    sub rsp, 8 ; %s %s\n",
 				tree->down->data, tree->down->next->data );
 
 		new_name->type = tree->down->data;
@@ -183,13 +183,13 @@ unsigned handle_var_decl( parse_node_t *tree, unsigned address, gen_state_t *sta
 		new_name->state = state;
 
 	} else {
-		printf( "section .bss\n" );
+		fprintf( fp, "section .bss\n" );
 
-		printf( "    ;%4d > \n", address );
-		printf( "global %s\n", tree->down->next->data );
+//		fprintf( fp, "    ;%4d > \n", address );
+		fprintf( fp, "global %s\n", tree->down->next->data );
 
-		printf( "    ;%4d > \n", address );
-		printf( "%s: resq 1 ; %s\n",
+//		fprintf( fp, "    ;%4d > \n", address );
+		fprintf( fp, "%s: resq 1 ; %s\n",
 				tree->down->next->data, tree->down->data );
 
 		new_name->type = tree->down->data;
@@ -201,12 +201,12 @@ unsigned handle_var_decl( parse_node_t *tree, unsigned address, gen_state_t *sta
 
 	add_name( state, new_name );
 
-	address = blarg( tree->next, address + 1, state );
+	address = blarg( tree->next, address + 1, state, fp );
 
 	return address;
 }
 
-unsigned handle_func_decl( parse_node_t *tree, unsigned address, gen_state_t *state ) {
+unsigned handle_func_decl( parse_node_t *tree, unsigned address, gen_state_t *state, FILE *fp ) {
 	gen_state_t newscope = {
 		.last = state,
 		.num_params = 0,
@@ -228,48 +228,51 @@ unsigned handle_func_decl( parse_node_t *tree, unsigned address, gen_state_t *st
 		add_name( state, new_name );
 
 	} else {
-		printf( "Error: symbol \"%s\" redefined\n", tree->down->next->data );
+		fprintf( stderr, "Error: symbol \"%s\" redefined\n", tree->down->next->data );
 	}
 
-	printf( "    ;%4d*> \n", address );
-	printf( "section .text\n" );
+//	fprintf( fp, "    ;%4d*> \n", address );
+	fprintf( fp, "section .text\n" );
 
-	printf( "    ;%4d*> \n", address );
-	printf( "global %s\n", tree->down->next->data );
+//	fprintf( fp, "    ;%4d*> \n", address );
+	fprintf( fp, "global %s\n", tree->down->next->data );
 
-	printf( "    ;%4d*> \n", address );
-	printf( "%s: ; returns %s\n",
+//	fprintf( fp, "    ;%4d*> \n", address );
+	fprintf( fp, "%s: ; returns %s\n",
 			tree->down->next->data, tree->down->data );
 
-	printf( "    ;%4d*> \n", address );
-	printf( "    push rbp\n" );
-	printf( "    ;%4d*> \n", address );
-	printf( "    mov rbp, rsp\n" );
+//	fprintf( fp, "    ;%4d*> \n", address );
+	fprintf( fp, "    push rbp\n" );
+//	fprintf( fp, "    ;%4d*> \n", address );
+	fprintf( fp, "    mov rbp, rsp\n" );
 
-	address = blarg( tree->down->next->next, address + 1, &newscope ) + 1;
+	address = blarg( tree->down->next->next, address + 1, &newscope, fp ) + 1;
 
-	printf( "    ;%4d > \n", address );
-	printf( "    mov rsp, rbp\n" );
+//	fprintf( fp, "    ;%4d*> \n", address );
+	fprintf( fp, ".function_end:\n" );
 
-	printf( "    ;%4d > \n", address );
-	printf( "    pop rbp\n" );
+//	fprintf( fp, "    ;%4d > \n", address );
+	fprintf( fp, "    mov rsp, rbp\n" );
 
-	printf( "    ;%4d > \n", address );
-	printf( "    ret\n" );
+//	fprintf( fp, "    ;%4d > \n", address );
+	fprintf( fp, "    pop rbp\n" );
 
-	address = blarg( tree->next, address + 1, state );
+//	fprintf( fp, "    ;%4d > \n", address );
+	fprintf( fp, "    ret\n" );
 
-	return address;
-}
-
-unsigned handle_param_decl_list( parse_node_t *tree, unsigned address, gen_state_t *state ) {
-	address = blarg( tree->down, address + 1, state );
-	address = blarg( tree->next, address + 1, state );
+	address = blarg( tree->next, address + 1, state, fp );
 
 	return address;
 }
 
-unsigned handle_param_decl( parse_node_t *tree, unsigned address, gen_state_t *state ) {
+unsigned handle_param_decl_list( parse_node_t *tree, unsigned address, gen_state_t *state, FILE *fp ) {
+	address = blarg( tree->down, address + 1, state, fp );
+	address = blarg( tree->next, address + 1, state, fp );
+
+	return address;
+}
+
+unsigned handle_param_decl( parse_node_t *tree, unsigned address, gen_state_t *state, FILE *fp ) {
 	state->num_params++;
 
 	name_decl_t *new_name = calloc( 1, sizeof( name_decl_t ));
@@ -280,64 +283,64 @@ unsigned handle_param_decl( parse_node_t *tree, unsigned address, gen_state_t *s
 	new_name->state = state;
 	add_name( state, new_name );
 
-	printf( "    ;%4d > \n", address );
-	printf( "    ; parameter \"%s\" of type \"%s\" at [rbp-%u]\n",
+//	fprintf( fp, "    ;%4d > \n", address );
+	fprintf( fp, "    ; parameter \"%s\" of type \"%s\" at [rbp-%u]\n",
 	tree->down->next->data, tree->down->data, state->num_params * 8 );
 
-	address = blarg( tree->next, address + 1, state );// + 1;
+	address = blarg( tree->next, address + 1, state, fp );// + 1;
 
 	return address;
 }
 
-unsigned handle_statement( parse_node_t *tree, unsigned address, gen_state_t *state ){
-	address = blarg( tree->down, address + 1, state );
-	address = blarg( tree->next, address + 1, state );
+unsigned handle_statement( parse_node_t *tree, unsigned address, gen_state_t *state, FILE *fp ){
+	address = blarg( tree->down, address + 1, state, fp );
+	address = blarg( tree->next, address + 1, state, fp );
 
 	return address;
 }
 
-unsigned handle_iter_statement( parse_node_t *tree, unsigned address, gen_state_t *state ){
+unsigned handle_iter_statement( parse_node_t *tree, unsigned address, gen_state_t *state, FILE *fp ){
 	unsigned test_start, test_addr;
 
 	test_start = address;
-	printf( "    ;%4d > \n", address );
-	printf( "    ; iterator statement, start at %u\n", test_start );
+//	fprintf( fp, "    ;%4d > \n", address );
+	fprintf( fp, "    ; iterator statement, start at %u\n", test_start );
 
-	printf( "    ;%4d > \n", address );
-	printf( ".while_%u:\n", test_start );
+//	fprintf( fp, "    ;%4d > \n", address );
+	fprintf( fp, ".while_%u:\n", test_start );
 
-	test_addr = blarg( tree->down->next, address + 1, state );
+	test_addr = blarg( tree->down->next, address + 1, state, fp );
 	address = test_addr + 1;
 
-	printf( "    ;%4d > \n", address );
-	printf( "    test rax, rax ; check result from %u\n", test_addr );
+//	fprintf( fp, "    ;%4d > \n", address );
+	fprintf( fp, "    test rax, rax ; check result from %u\n", test_addr );
 
-	printf( "    ;%4d > \n", address );
-	printf( "    jz .end_while_%u\n", test_start );
+//	fprintf( fp, "    ;%4d > \n", address );
+	fprintf( fp, "    jz .end_while_%u\n", test_start );
 
-	printf( "    ;%4d > \n", address );
-	printf( "    ; iterator statement \"%s\", test at %u. If test is 0 jump to end\n",
+//	fprintf( fp, "    ;%4d > \n", address );
+	fprintf( fp, "    ; iterator statement \"%s\", test at %u. If test is 0 jump to end\n",
 	type_str( tree->down->type ), test_addr );
 
-	address = blarg( tree->down->next->next, address + 1, state );
+	address = blarg( tree->down->next->next, address + 1, state, fp );
 	address++;
 
-	printf( "    ;%4d > \n", address );
-	printf( "    jmp .while_%u\n", test_start );
+//	fprintf( fp, "    ;%4d > \n", address );
+	fprintf( fp, "    jmp .while_%u\n", test_start );
 
-	printf( "    ;%4d > \n", address );
-	printf( "    ; end of iterator at %u\n", test_start );
+//	fprintf( fp, "    ;%4d > \n", address );
+	fprintf( fp, "    ; end of iterator at %u\n", test_start );
 
-	printf( "    ;%4d > \n", address );
-	printf( ".end_while_%u:\n", test_start );
+//	fprintf( fp, "    ;%4d > \n", address );
+	fprintf( fp, ".end_while_%u:\n", test_start );
 
-	address = blarg( tree->next, address + 1, state );
+	address = blarg( tree->next, address + 1, state, fp );
 
 	return address;
 }
 
 unsigned handle_assignment_expression(
-		parse_node_t *tree, unsigned address, gen_state_t *state )
+		parse_node_t *tree, unsigned address, gen_state_t *state, FILE *fp )
 {
 	unsigned op;
 
@@ -346,94 +349,94 @@ unsigned handle_assignment_expression(
 	name_decl_t *name = find_name( tree->down->data, state );
 
 	if ( name ){
-		op = blarg( tree->down->next->next, address + 1, state );
+		op = blarg( tree->down->next->next, address + 1, state, fp );
 		address = op + 1;
 
 		switch( name->placement ){
 			case VAR_PLACE_GLOBAL:
-				printf( "    ;%4d > \n", address );
-				printf( "    mov [%s], rax\n", tree->down->data );
+//				fprintf( fp, "    ;%4d > \n", address );
+				fprintf( fp, "    mov [%s], rax\n", tree->down->data );
 				break;
 
 			case VAR_PLACE_PARAMETER:
-				printf( "    ;%4d > \n", address );
-				printf( "    mov [rbp+%u], rax\n", (name->number + 1) * 8 );
+//				fprintf( fp, "    ;%4d > \n", address );
+				fprintf( fp, "    mov [rbp+%u], rax\n", (name->number + 1) * 8 );
 				break;
 
 			case VAR_PLACE_LOCAL:
-				printf( "    ;%4d > \n", address );
-				printf( "    mov [rbp-%u], rax\n", name->number * 8 );
+//				fprintf( fp, "    ;%4d > \n", address );
+				fprintf( fp, "    mov [rbp-%u], rax\n", name->number * 8 );
 				break;
 
 			default:
 				break;
 		}
 
-		printf( "    ;%4d > \n", address );
-		printf( "    ; End of expression, op are %u\n", op );
+//		fprintf( fp, "    ;%4d > \n", address );
+		fprintf( fp, "    ; End of expression, op are %u\n", op );
 	}
 
 	return address;
 }
 
-unsigned handle_expression( parse_node_t *tree, unsigned address, gen_state_t *state ){
+unsigned handle_expression( parse_node_t *tree, unsigned address, gen_state_t *state, FILE *fp ){
 	unsigned op1, op2;
 
-	printf( "    ;%4d > \n", address );
-	printf( "    ; Have expression, operation is %s\n", type_str( tree->down->next->type ));
+//	fprintf( fp, "    ;%4d > \n", address );
+	fprintf( fp, "    ; Have expression, operation is %s\n", type_str( tree->down->next->type ));
 
 	if ( tree->down->next->type == T_EQUALS ){
-		address = handle_assignment_expression( tree, address + 1, state );
+		address = handle_assignment_expression( tree, address + 1, state, fp );
 		
 	} else {
-		op1 = blarg( tree->down, address + 1, state );
+		op1 = blarg( tree->down, address + 1, state, fp );
 		address = op1 + 1;
 
-		printf( "    ;%4d > \n", address );
-		printf( "    mov rbx, rax\n" );
+//		fprintf( fp, "    ;%4d > \n", address );
+		fprintf( fp, "    mov rbx, rax\n" );
 
-		printf( "    ;%4d > \n", address );
-		printf( "    push rbx\n" );
+//		fprintf( fp, "    ;%4d > \n", address );
+		fprintf( fp, "    push rbx\n" );
 
-		op2 = blarg( tree->down->next->next, address + 1, state );
+		op2 = blarg( tree->down->next->next, address + 1, state, fp );
 		address = op2 + 1;
 
-		printf( "    ;%4d > \n", address );
-		printf( "    pop rbx\n" );
+//		fprintf( fp, "    ;%4d > \n", address );
+		fprintf( fp, "    pop rbx\n" );
 
 		switch( tree->down->next->type ){
 			case T_PLUS:
-				printf( "    ;%4d > \n", address );
-				printf( "    add rax, rbx\n" );
+//				fprintf( fp, "    ;%4d > \n", address );
+				fprintf( fp, "    add rax, rbx\n" );
 				address++;
 				break;
 
 			case T_MINUS:
-				printf( "    ;%4d > \n", address );
-				printf( "    sub rbx, rax\n" );
-				printf( "    ;%4d > \n", address );
-				printf( "    mov rax, rbx\n" );
+//				fprintf( fp, "    ;%4d > \n", address );
+				fprintf( fp, "    sub rbx, rax\n" );
+//				fprintf( fp, "    ;%4d > \n", address );
+				fprintf( fp, "    mov rax, rbx\n" );
 				address++;
 				break;
 
 			case T_STAR:
-				printf( "    ;%4d > \n", address );
-				printf( "    mul rbx\n" );
+//				fprintf( fp, "    ;%4d > \n", address );
+				fprintf( fp, "    mul rbx\n" );
 				address++;
 				break;
 
 			case T_SLASH:
-				printf( "    ;%4d > \n", address );
-				printf( "    mov rcx, rax\n" );
+//				fprintf( fp, "    ;%4d > \n", address );
+				fprintf( fp, "    mov rcx, rax\n" );
 
-				printf( "    ;%4d > \n", address );
-				printf( "    mov rax, rbx\n" );
+//				fprintf( fp, "    ;%4d > \n", address );
+				fprintf( fp, "    mov rax, rbx\n" );
 
-				printf( "    ;%4d > \n", address );
-				printf( "    mov rdx, 0\n" );
+//				fprintf( fp, "    ;%4d > \n", address );
+				fprintf( fp, "    mov rdx, 0\n" );
 
-				printf( "    ;%4d > \n", address );
-				printf( "    div rcx\n" );
+//				fprintf( fp, "    ;%4d > \n", address );
+				fprintf( fp, "    div rcx\n" );
 				address++;
 				break;
 
@@ -441,75 +444,78 @@ unsigned handle_expression( parse_node_t *tree, unsigned address, gen_state_t *s
 				break;
 		}
 
-		printf( "    ;%4d > \n", address );
-		printf( "    ; End of expression, ops are %u and %u\n", op1, op2 );
+//		fprintf( fp, "    ;%4d > \n", address );
+		fprintf( fp, "    ; End of expression, ops are %u and %u\n", op1, op2 );
 	}
 
 	return address;
 }
 
-unsigned handle_select( parse_node_t *tree, unsigned address, gen_state_t *state ){
+unsigned handle_select( parse_node_t *tree, unsigned address, gen_state_t *state, FILE *fp ){
 	unsigned test_addr, start, body_addr, else_addr = 0, end;
 
-	test_addr = blarg( tree->down->next, address + 1, state );
+	test_addr = blarg( tree->down->next, address + 1, state, fp );
 	address = test_addr + 1;
 
 	start = address;
 
-	printf( "    ;%4d > \n", address );
-	printf( ".if_%u:\n", start );
+//	fprintf( fp, "    ;%4d > \n", address );
+	fprintf( fp, ".if_%u:\n", start );
 
-	printf( "    ;%4d > \n", address );
-	printf( "    test rax, rax ; check result from %u\n", test_addr );
+//	fprintf( fp, "    ;%4d > \n", address );
+	fprintf( fp, "    test rax, rax ; check result from %u\n", test_addr );
 
-	printf( "    ;%4d > \n", address );
-	printf( "    jz .else_if_%u\n", start );
+//	fprintf( fp, "    ;%4d > \n", address );
+	fprintf( fp, "    jz .else_if_%u\n", start );
 
-	body_addr = blarg( tree->down->next->next, address + 1, state );
+	body_addr = blarg( tree->down->next->next, address + 1, state, fp );
 	address = body_addr + 1;
 
-	printf( "    ;%4d > \n", address );
-	printf( "    jmp .end_if_%u\n", start );
+//	fprintf( fp, "    ;%4d > \n", address );
+	fprintf( fp, "    jmp .end_if_%u\n", start );
 
-	printf( "    ;%4d > \n", address );
-	printf( ".else_if_%u:\n", start );
+//	fprintf( fp, "    ;%4d > \n", address );
+	fprintf( fp, ".else_if_%u:\n", start );
 
 	if ( tree->down->next->next->next ){
-		else_addr = blarg( tree->down->next->next->next->next, address + 1, state );
+		else_addr = blarg( tree->down->next->next->next->next, address + 1, state, fp );
 		address = else_addr + 1;
 	}
 
-	printf( "    ;%4d > \n", address );
-	printf( ".end_if_%u:\n", start );
+//	fprintf( fp, "    ;%4d > \n", address );
+	fprintf( fp, ".end_if_%u:\n", start );
 
-	address = blarg( tree->next, address + 1, state );
+	address = blarg( tree->next, address + 1, state, fp );
 
 	return address;
 }
 
-unsigned handle_return( parse_node_t *tree, unsigned address, gen_state_t *state ){
+unsigned handle_return( parse_node_t *tree, unsigned address, gen_state_t *state, FILE *fp ){
 	unsigned return_addr;
 
-	return_addr = blarg( tree->down->next, address + 1, state );
+	return_addr = blarg( tree->down->next, address + 1, state, fp );
 	address = return_addr + 1;
 
-	printf( "    ;%4d > \n", address );
-	printf( "    ; Have return statement, return value at %u\n", return_addr );
+//	fprintf( fp, "    ;%4d > \n", address );
+	fprintf( fp, "    ; Have return statement, return value at %u\n", return_addr );
 
-	address = blarg( tree->next, address + 1, state );
+//	fprintf( fp, "    ;%4d > \n", address );
+	fprintf( fp, "    jmp .function_end\n" );
+
+	address = blarg( tree->next, address + 1, state, fp );
 
 	return address;
 }
 
-unsigned handle_variable( parse_node_t *tree, unsigned address, gen_state_t *state ){
-	printf( "    ;%4d > \n", address );
-	printf( "    ; Have variable \"%s\", index %d\n",
+unsigned handle_variable( parse_node_t *tree, unsigned address, gen_state_t *state, FILE *fp ){
+//	fprintf( fp, "    ;%4d > \n", address );
+	fprintf( fp, "    ; Have variable \"%s\", index %d\n",
 			tree->down->data, *(int *)tree->down->next->next->data );
 
 	return address;
 }
 
-unsigned handle_call( parse_node_t *tree, unsigned address, gen_state_t *state ){
+unsigned handle_call( parse_node_t *tree, unsigned address, gen_state_t *state, FILE *fp ){
 	parse_node_t *move;
 	unsigned param;
 	unsigned i;
@@ -518,46 +524,46 @@ unsigned handle_call( parse_node_t *tree, unsigned address, gen_state_t *state )
 		if ( move->type == T_ARGS_LIST )
 			move = move->down;
 
-		param = blarg( move, address + 1, state );
+		param = blarg( move, address + 1, state, fp );
 		address = param + 1;
 
-		printf( "    ;%4d > \n", address );
-		printf( "    push rax ; store %d as parameter %u\n", param, i );
+//		fprintf( fp, "    ;%4d > \n", address );
+		fprintf( fp, "    push rax ; store %d as parameter %u\n", param, i );
 
 		address++;
 	}
 
-	printf( "    ;%4d > \n", address );
-	printf( "    call %s\n", tree->down->data );
+//	fprintf( fp, "    ;%4d > \n", address );
+	fprintf( fp, "    call %s\n", tree->down->data );
 
-	printf( "    ;%4d > \n", address );
-	printf( "    add rsp, %u ; restore stack\n", i * 8 );
+//	fprintf( fp, "    ;%4d > \n", address );
+	fprintf( fp, "    add rsp, %u ; restore stack\n", i * 8 );
 
 	return address;
 }
 
-unsigned handle_name( parse_node_t *tree, unsigned address, gen_state_t *state ){
+unsigned handle_name( parse_node_t *tree, unsigned address, gen_state_t *state, FILE *fp ){
 	name_decl_t *name = find_name( tree->data, state );
 
 	if ( name ){
-		printf( "    ;%4d > \n", address );
-		printf( "    ; Have name, \"%s\", at %p and with placement %u\n",
+//		fprintf( fp, "    ;%4d > \n", address );
+		fprintf( fp, "    ; Have name, \"%s\", at %p and with placement %u\n",
 				tree->data, name, name->placement );
 
 		switch( name->placement ){
 			case VAR_PLACE_GLOBAL:
-				printf( "    ;%4d > \n", address );
-				printf( "    mov rax, [%s]\n", tree->data );
+//				fprintf( fp, "    ;%4d > \n", address );
+				fprintf( fp, "    mov rax, [%s]\n", tree->data );
 				break;
 
 			case VAR_PLACE_PARAMETER:
-				printf( "    ;%4d > \n", address );
-				printf( "    mov rax, [rbp+%u]\n", (name->number + 1) * 8 );
+//				fprintf( fp, "    ;%4d > \n", address );
+				fprintf( fp, "    mov rax, [rbp+%u]\n", (name->number + 1) * 8 );
 				break;
 
 			case VAR_PLACE_LOCAL:
-				printf( "    ;%4d > \n", address );
-				printf( "    mov rax, [rbp-%u]\n", name->number * 8 );
+//				fprintf( fp, "    ;%4d > \n", address );
+				fprintf( fp, "    mov rax, [rbp-%u]\n", name->number * 8 );
 				break;
 
 			default:
@@ -565,101 +571,101 @@ unsigned handle_name( parse_node_t *tree, unsigned address, gen_state_t *state )
 		}
 
 	} else {
-		printf( "Error: symbol \"%s\" undefined\n", tree->data );
+		fprintf( stderr, "Error: symbol \"%s\" undefined\n", tree->data );
 	}
 
 	return address;
 }
 
-unsigned handle_int( parse_node_t *tree, unsigned address, gen_state_t *state ){
-	printf( "    ;%4d > \n", address );
-	printf( "    ; Have basic datatype \"%s\"\n", type_str( tree->type ));
-	printf( "    ;%4d > \n", address );
-	printf( "    mov rax, %u\n", *(int *)tree->data );
+unsigned handle_int( parse_node_t *tree, unsigned address, gen_state_t *state, FILE *fp ){
+//	fprintf( fp, "    ;%4d > \n", address );
+	fprintf( fp, "    ; Have basic datatype \"%s\"\n", type_str( tree->type ));
+//	fprintf( fp, "    ;%4d > \n", address );
+	fprintf( fp, "    mov rax, %u\n", *(int *)tree->data );
 
 	return address;
 }
 
-unsigned handle_basic_datatype( parse_node_t *tree, unsigned address, gen_state_t *state ){
-	printf( "    ;%4d > \n", address );
-	printf( "    ; Have basic datatype \"%s\"\n", type_str( tree->type ));
+unsigned handle_basic_datatype( parse_node_t *tree, unsigned address, gen_state_t *state, FILE *fp ){
+//	fprintf( fp, "    ;%4d > \n", address );
+	fprintf( fp, "    ; Have basic datatype \"%s\"\n", type_str( tree->type ));
 
 	return address;
 }
 
-unsigned blarg( parse_node_t *tree, unsigned address, gen_state_t *state ){
+unsigned blarg( parse_node_t *tree, unsigned address, gen_state_t *state, FILE *fp ){
 	if ( tree ){
 		switch( tree->type ){
 			case T_DECL_LIST:
-				address = handle_decl_list( tree, address, state );
+				address = handle_decl_list( tree, address, state, fp );
 				break;
 
 			case T_VAR_DECL:
-				address = handle_var_decl( tree, address, state );
+				address = handle_var_decl( tree, address, state, fp );
 				break;
 
 			case T_FUN_DECL:
-				address = handle_func_decl( tree, address, state );
+				address = handle_func_decl( tree, address, state, fp );
 				break;
 
 			case T_PARAM_DECL_LIST:
-				address = handle_param_decl_list( tree, address, state );
+				address = handle_param_decl_list( tree, address, state, fp );
 				break;
 
 			case T_PARAM_DECL:
-				address = handle_param_decl( tree, address, state );
+				address = handle_param_decl( tree, address, state, fp );
 				break;
 
 			case T_STATEMNT_LIST:
 			case T_COMP_STATEMNT:
 			case T_STATEMNT:
-				address = handle_statement( tree, address, state );
+				address = handle_statement( tree, address, state, fp );
 				break;
 
 			case T_ITER_STATEMNT:
-				address = handle_iter_statement( tree, address, state );
+				address = handle_iter_statement( tree, address, state, fp );
 				break;
 
 			case T_EXPR:
 			case T_ADD_EXPR:
 			case T_TERM:
 			case T_SIMPLE_EXPR:
-				address = handle_expression( tree, address, state );
+				address = handle_expression( tree, address, state, fp );
 				break;
 
 			case T_SELECT_STATEMNT:
-				address = handle_select( tree, address, state );
+				address = handle_select( tree, address, state, fp );
 				break;
 
 			case T_RETURN_STATEMNT:
-				address = handle_return( tree, address, state );
+				address = handle_return( tree, address, state, fp );
 				break;
 
 			case T_VAR:
-				address = handle_variable( tree, address, state );
+				address = handle_variable( tree, address, state, fp );
 				break; 
 
 			case T_CALL:
-				address = handle_call( tree, address, state );
+				address = handle_call( tree, address, state, fp );
 				break;
 
 			case T_INT:
-				handle_int( tree, address, state );
+				address = handle_int( tree, address, state, fp );
 				break;
 
 			case T_STRING:
 			case T_CHAR:
 			case T_DOUBLE:
-				address = handle_basic_datatype( tree, address, state );
+				address = handle_basic_datatype( tree, address, state, fp );
 				break;
 
 			case T_NAME:
-				address = handle_name( tree, address, state );
+				address = handle_name( tree, address, state, fp );
 				break;
 
 			default:
-				printf( "    ;%4d > \n", address );
-				printf( "    ; Skipping type \"%s\"...\n", type_str( tree->type ));
+//				fprintf( fp, "    ;%4d > \n", address );
+				fprintf( fp, "    ; Skipping type \"%s\"...\n", type_str( tree->type ));
 				break;
 		}
 	}
@@ -693,12 +699,11 @@ tac_t *ptree_to_tlist( parse_node_t *tree ){
 	wut = trim_tree( wut );
 	//dump_tree( 0, wut );
 
-	putchar( '\n' );
-
 	memset( &state, 0, sizeof( state ));
 
-	printf( "BITS 64\n" );
-	blarg( wut, 0, &state );
+	FILE *meh = fopen( "testout.s", "w" );
+	fprintf( meh, "BITS 64\n" );
+	blarg( wut, 0, &state, meh );
 
 	return ret;
 }
