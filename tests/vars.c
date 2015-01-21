@@ -18,8 +18,13 @@ int sub( int a, int b ){
 	return i - j;
 }
 
+int fact( int n ){
+	if ( n ) return fact( n - 1 ) * n;
+	else     return 1;
+}
+
 int bar( int n ){
-	globe = 2 + 3;
+	globe = fact( 4 ) / 2;
 
 	return 0;
 }
@@ -29,7 +34,7 @@ int main( ){
 
 	foo = 2 - 2;
 
-	if ( foo ){
+	if ( 0 ){
 		return 100 + sub( 100, 50 ) - 100;
 
 	} else {

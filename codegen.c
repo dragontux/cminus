@@ -401,27 +401,40 @@ unsigned handle_expression( parse_node_t *tree, unsigned address, gen_state_t *s
 		printf( "    ;%4d > \n", address );
 		printf( "    pop rbx\n" );
 
-		printf( "    ;%4d > \n", address );
-		printf( "    mov rcx, rax\n" );
-
 		switch( tree->down->next->type ){
 			case T_PLUS:
 				printf( "    ;%4d > \n", address );
-				printf( "    add rcx, rbx\n" );
-				printf( "    ;%4d > \n", address );
-				printf( "    mov rax, rcx\n" );
+				printf( "    add rax, rbx\n" );
 				address++;
 				break;
 
 			case T_MINUS:
 				printf( "    ;%4d > \n", address );
-				printf( "    sub rbx, rcx\n" );
+				printf( "    sub rbx, rax\n" );
 				printf( "    ;%4d > \n", address );
 				printf( "    mov rax, rbx\n" );
 				address++;
 				break;
 
-			case T_EQUALS:
+			case T_STAR:
+				printf( "    ;%4d > \n", address );
+				printf( "    mul rbx\n" );
+				address++;
+				break;
+
+			case T_SLASH:
+				printf( "    ;%4d > \n", address );
+				printf( "    mov rcx, rax\n" );
+
+				printf( "    ;%4d > \n", address );
+				printf( "    mov rax, rbx\n" );
+
+				printf( "    ;%4d > \n", address );
+				printf( "    mov rdx, 0\n" );
+
+				printf( "    ;%4d > \n", address );
+				printf( "    div rcx\n" );
+				address++;
 				break;
 
 			default:
