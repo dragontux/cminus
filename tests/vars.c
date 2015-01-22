@@ -24,17 +24,23 @@ int fact( int n ){
 }
 
 int bar( int n ){
-	globe = fact( 4 ) / 2;
+	globe = fact( 4 ) / n;
 
 	return 0;
 }
 
 int main( ){
 	int foo;
+	int i;
 
 	foo = 2 - 2;
 
-	if ( 0 ){
+	i = 10;
+	while ( i > 1 ){
+		i = i - 1;
+	}
+
+	if ( i ){
 		return 100 + sub( 100, 50 ) - 100;
 
 	} else {

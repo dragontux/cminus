@@ -384,6 +384,29 @@ unsigned gen_expression( parse_node_t *tree, unsigned address, gen_state_t *stat
 				address++;
 				break;
 
+			// TODO: find more efficient way to do comparisons
+			case T_LESS_THAN:
+				fprintf( fp, "    cmp rbx, rax\n" );
+				fprintf( fp, "    jge .cmp_false_%u\n", address );
+				fprintf( fp, "    mov rax, 1\n" );
+				fprintf( fp, "    jmp .cmp_end_%u\n", address );
+				fprintf( fp, ".cmp_false_%u:\n", address );
+				fprintf( fp, "    mov rax, 0\n" );
+				fprintf( fp, ".cmp_end_%u:\n", address );
+				address++;
+				break;
+
+			case T_GREATER_THAN:
+				fprintf( fp, "    cmp rbx, rax\n" );
+				fprintf( fp, "    jle .cmp_false_%u\n", address );
+				fprintf( fp, "    mov rax, 1\n" );
+				fprintf( fp, "    jmp .cmp_end_%u\n", address );
+				fprintf( fp, ".cmp_false_%u:\n", address );
+				fprintf( fp, "    mov rax, 0\n" );
+				fprintf( fp, ".cmp_end_%u:\n", address );
+				address++;
+				break;
+
 			default:
 				break;
 		}
