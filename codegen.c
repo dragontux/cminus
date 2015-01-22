@@ -222,18 +222,24 @@ unsigned gen_func_decl( parse_node_t *tree, unsigned address, gen_state_t *state
 		fprintf( stderr, "Error: symbol \"%s\" redefined\n", tree->down->next->data );
 	}
 
-	fprintf( fp, "section .text\n" );
-	fprintf( fp, "global %s\n", tree->down->next->data );
-	fprintf( fp, "%s: ; returns %s\n", tree->down->next->data, tree->down->data );
-	fprintf( fp, "    push rbp\n" );
-	fprintf( fp, "    mov rbp, rsp\n" );
+	if ( strcmp( tree->down->data, "extern" ) == 0 ){
+		fprintf( fp, "extern %s\n", tree->down->next->data );
 
-	address = gen_code( tree->down->next->next, address + 1, &newscope, fp ) + 1;
+	} else {
+		fprintf( fp, "section .text\n" );
+		fprintf( fp, "global %s\n", tree->down->next->data );
+		fprintf( fp, "%s: ; returns %s\n", tree->down->next->data, tree->down->data );
 
-	fprintf( fp, ".function_end:\n" );
-	fprintf( fp, "    mov rsp, rbp\n" );
-	fprintf( fp, "    pop rbp\n" );
-	fprintf( fp, "    ret\n" );
+		fprintf( fp, "    push rbp\n" );
+		fprintf( fp, "    mov rbp, rsp\n" );
+
+		address = gen_code( tree->down->next->next, address + 1, &newscope, fp ) + 1;
+
+		fprintf( fp, ".function_end:\n" );
+		fprintf( fp, "    mov rsp, rbp\n" );
+		fprintf( fp, "    pop rbp\n" );
+		fprintf( fp, "    ret\n" );
+	}
 
 	address = gen_code( tree->next, address + 1, state, fp );
 
@@ -250,14 +256,14 @@ unsigned gen_param_decl_list( parse_node_t *tree, unsigned address, gen_state_t 
 unsigned gen_param_decl( parse_node_t *tree, unsigned address, gen_state_t *state, FILE *fp ) {
 	name_decl_t *new_name = calloc( 1, sizeof( name_decl_t ));
 
-	state->num_params++;
-
 	new_name->type = tree->down->data;
 	new_name->name = tree->down->next->data;
 	new_name->placement = VAR_PLACE_PARAMETER;
 	new_name->number = state->num_params;
 	new_name->state = state;
 	add_name( state, new_name );
+
+	state->num_params++;
 
 	//	fprintf( fp, "    ;%4d > \n", address );
 	//fprintf( fp, "    ; parameter \"%s\" of type \"%s\" at [rbp-%u]\n",
@@ -479,6 +485,8 @@ unsigned gen_call( parse_node_t *tree, unsigned address, gen_state_t *state, FIL
 	unsigned param;
 	unsigned i;
 
+	char *saveregs[] = { "rdi", "rsi", "rdx", "rcx", "r8", "r9", NULL };
+
 	for ( move = tree->down->next, i = 0; move; move = move->next, i++ ){
 		if ( move->type == T_ARGS_LIST )
 			move = move->down;
@@ -486,13 +494,17 @@ unsigned gen_call( parse_node_t *tree, unsigned address, gen_state_t *state, FIL
 		param = gen_code( move, address + 1, state, fp );
 		address = param + 1;
 
-		fprintf( fp, "    push rax ; store %d as parameter %u\n", param, i );
+		fprintf( fp, "    push %s\n", saveregs[i] );
+		fprintf( fp, "    mov %s, rax ; store %d as parameter %u\n", saveregs[i], param, i );
 
 		address++;
 	}
 
 	fprintf( fp, "    call %s\n", tree->down->data );
-	fprintf( fp, "    add rsp, %u ; restore stack\n", i * 8 );
+
+	for ( ; i; i-- ){
+		fprintf( fp, "    pop %s\n", saveregs[i - 1] );
+	}
 
 	return address;
 }
@@ -507,7 +519,9 @@ unsigned gen_name( parse_node_t *tree, unsigned address, gen_state_t *state, FIL
 				break;
 
 			case VAR_PLACE_PARAMETER:
-				fprintf( fp, "    mov rax, [rbp+%u]\n", (name->number + 1) * 8 );
+				//fprintf( fp, "    mov rax, [rbp+%u]\n", (name->number + 1) * 8 );
+				fprintf( fp, "    mov rax, %s\n",
+						(char *[]){ "rdi", "rsi", "rdx", "rcx", "r8", "r9" }[ name->number ]);
 				break;
 
 			case VAR_PLACE_LOCAL:

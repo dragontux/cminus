@@ -1,5 +1,7 @@
 int globe;
 int n;
+extern getchar( ){0;}
+extern putchar( int n ){0;}
 
 int add( int a, int b ){
 	return a + b;
@@ -19,32 +21,48 @@ int sub( int a, int b ){
 }
 
 int fact( int n ){
+	putchar( 70 );
+	putchar( 10 );
+
 	if ( n ) return fact( n - 1 ) * n;
 	else     return 1;
 }
 
 int bar( int n ){
-	globe = fact( 4 ) / n;
+	globe = fact( 5 ) / n;
 
 	return 0;
 }
 
-int main( ){
+int meh( ){
+	int i;
+
+	i = 0;
+
+	while ( i < 10 ){
+		putchar( 109 );
+		putchar( 10 );
+
+		i = i + 1;
+	}
+
+	return 0;
+}
+
+int main( int argc ){
 	int foo;
 	int i;
 
 	foo = 2 - 2;
-
-	i = 10;
-	while ( i > 1 ){
-		i = i - 1;
-	}
+	i = meh( 0 );
 
 	if ( i ){
-		return 100 + sub( 100, 50 ) - 100;
+		putchar( getchar( 0 ));
 
 	} else {
 		bar( 2 );
 		return globe;
 	}
+
+	return argc;
 }
