@@ -229,16 +229,17 @@ static rule_t *crules =
 
 			.next = &(rule_t){
 				.type = T_OPEN_PAREN,
+
 				.down = &(rule_t){
+					.type = T_CLOSE_PAREN,
+					.ret  = T_CALL,
+
+				.next = &(rule_t){
 					.type = T_ARGS_LIST,
 					.down = &(rule_t){
 						.type = T_CLOSE_PAREN,
 						.ret  = T_CALL,
 					},
-
-				.next = &(rule_t){
-					.type = T_CLOSE_PAREN,
-					.ret  = T_CALL,
 				}},
 
 			}},

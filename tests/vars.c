@@ -56,8 +56,8 @@ int main( int argc ){
 	foo = 2 - 2;
 	i = meh( 0 );
 
-	if ( i ){
-		putchar( getchar( 0 ));
+	if ( 1 ){
+		putchar( getchar( ));
 
 	} else {
 		bar( 2 );

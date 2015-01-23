@@ -26,9 +26,10 @@ int main( int argc, char *argv[] ){
 	char *output_name = "testout.s";
 	char *backend = "default";
 	char c;
+
 	int	i = 0;
-	int lex_dump = 0;
-	int parse_dump = 0;
+
+	enum arg_flags flags = ARG_FLAG_DUMP_NONE;
 
 	if ( argc < 2 ){
 		do_help( argv );
@@ -40,19 +41,25 @@ int main( int argc, char *argv[] ){
 			case 'f':
 				filename = argv[++i];
 				break;
+
 			case 'b':
 				backend = argv[++i];
 				break;
+
 			case 'h':
 				do_help( argv );
 				exit( 0 );
 				break;
+
 			case 'l':
-				lex_dump = 1;
+				flags |= ARG_FLAG_DUMP_LEX;
 				break;
+
 			case 'p':
-				parse_dump = 1;
+				flags |= ARG_FLAG_DUMP_PARSE;
+				if ( 1 && 2 + 3 == 4 );
 				break;
+
 			case 'o':
 				output_name = argv[++i];
 				break;
@@ -68,19 +75,15 @@ int main( int argc, char *argv[] ){
 	move = meh = lex_file( fp );
 	fclose( fp );
 
-	if ( lex_dump ){
+	if ( flags & ARG_FLAG_DUMP_LEX ){
 		printf( "-=[ Lexer dump: \n" );
 		dump_tree( 0, move );
 	}
 
 	move = parse_tokens( meh );
-	if ( parse_dump ){
-		printf( "-=[ Parse tree dump: \n" );
-		dump_tree( 0, move );
-	}
 
 	if ( strcmp( backend, "default" ) == 0 || strcmp( backend, "nasm_x86_64" ) == 0 ){
-		generate_output_asm( move, output_name );
+		generate_output_asm( move, output_name, flags );
 
 	} else {
 		die( 1, "Unknown backend \"%s\"\n", backend );

@@ -27,12 +27,15 @@ parse_node_t *trim_tree( parse_node_t *tree ){
 	if ( tree ){
 		ret = tree;
 		if (( ret->next == NULL || tree->next->type == T_NULL ) &&
-				( tree->down != NULL && !tree->down->next )){
+				( tree->down != NULL && !tree->down->next )
+				&& tree->type != T_CALL ){
 
 			ret = trim_tree( tree->down );
 			free( tree );
 
-		} else if ( tree->down != NULL && !tree->down->next && tree->type != T_STATEMNT ){
+		} else if ( tree->down != NULL && !tree->down->next
+				&& tree->type != T_STATEMNT && tree->type != T_CALL ){
+
 			ret = trim_tree( tree->down );
 			ret->next = trim_tree( tree->next );
 			free( tree );
@@ -40,7 +43,6 @@ parse_node_t *trim_tree( parse_node_t *tree ){
 		} else {
 			ret->down = trim_tree( tree->down );
 			ret->next = trim_tree( tree->next );
-
 		}
 	}
 
@@ -634,14 +636,14 @@ unsigned gen_code( parse_node_t *tree, unsigned address, gen_state_t *state, FIL
 	return address;
 }
 
-void generate_output_asm( parse_node_t *tree, char *name ){
+void generate_output_asm( parse_node_t *tree, char *name, enum arg_flags flags ){
 	parse_node_t *wut = clone_tree( tree );
 	gen_state_t state;
 
-	/*
-	printf( "-=[ Original:\n" );
-	dump_tree( 0, tree );
-	*/
+	if ( flags & ARG_FLAG_DUMP_PARSE ){
+		printf( "-=[ Original:\n" );
+		dump_tree( 0, tree );
+	}
 
 	strip_token( wut, T_SEMICOL );
 	strip_token( wut, T_COMMA );
@@ -650,14 +652,17 @@ void generate_output_asm( parse_node_t *tree, char *name ){
 	strip_token( wut, T_OPEN_PAREN );
 	strip_token( wut, T_CLOSE_PAREN );
 
-	/*
-	printf( "-=[ New: \n" );
-	dump_tree( 0, wut );
-	*/
+	if ( flags & ARG_FLAG_DUMP_PARSE ){
+		printf( "-=[ Tokens stripped: \n" );
+		dump_tree( 0, wut );
+	}
 
-	//printf( "-=[ Reduced: \n" );
 	wut = trim_tree( wut );
-	//dump_tree( 0, wut );
+
+	if ( flags & ARG_FLAG_DUMP_PARSE ){
+		printf( "-=[ Reduced: \n" );
+		dump_tree( 0, wut );
+	}
 
 	memset( &state, 0, sizeof( state ));
 
