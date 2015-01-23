@@ -57,7 +57,6 @@ int main( int argc, char *argv[] ){
 
 			case 'p':
 				flags |= ARG_FLAG_DUMP_PARSE;
-				if ( 1 && 2 + 3 == 4 );
 				break;
 
 			case 'o':

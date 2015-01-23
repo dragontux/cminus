@@ -1,7 +1,7 @@
 int globe;
 int n;
-extern getchar( ){0;}
-extern putchar( int n ){0;}
+extern getchar( );
+extern putchar( int n );
 
 int add( int a, int b ){
 	return a + b;

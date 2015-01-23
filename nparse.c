@@ -204,7 +204,11 @@ static rule_t *crules =
 							.down = &(rule_t){
 								.type = T_COMP_STATEMNT,
 								.ret  = T_FUN_DECL,
-							},
+
+							.next = &(rule_t){
+								.type = T_SEMICOL,
+								.ret  = T_FUN_DECL,
+							}},
 						},
 
 					.next = &(rule_t){
@@ -212,7 +216,11 @@ static rule_t *crules =
 						.down = &(rule_t){
 							.type = T_COMP_STATEMNT,
 							.ret  = T_FUN_DECL,
-						},
+
+						.next = &(rule_t){
+							.type = T_SEMICOL,
+							.ret  = T_FUN_DECL,
+						}},
 					}},
 				}},
 			},
