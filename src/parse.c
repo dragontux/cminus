@@ -1,4 +1,4 @@
-#include "parse.h"
+#include <cminus/parse.h>
 
 //static rule_t *crules = NULL;
 extern char *debug_strings[];

@@ -1,4 +1,4 @@
-#include "lex.h"
+#include <cminus/lex.h>
 
 int cline = 1;
 parse_node_t *get_token( FILE *fp ){

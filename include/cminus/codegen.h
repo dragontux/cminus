@@ -7,7 +7,7 @@
 #define _codegen_h
 
 #include <stdio.h>
-#include "parse.h"
+#include <cminus/parse.h>
 
 enum arg_flags {
 	ARG_FLAG_DUMP_NONE  = 0,

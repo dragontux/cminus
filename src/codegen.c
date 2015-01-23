@@ -1,5 +1,5 @@
-#include "parse.h"
-#include "codegen.h"
+#include <cminus/parse.h>
+#include <cminus/codegen.h>
 #include <string.h>
 
 extern char *type_str( token_type_t );

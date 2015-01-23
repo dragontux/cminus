@@ -1,10 +1,10 @@
 #include <stdio.h>
 #include <unistd.h>
 
-#include "parse.h"
-#include "lex.h"
-#include "debug.h"
-#include "codegen.h"
+#include <cminus/parse.h>
+#include <cminus/lex.h>
+#include <cminus/debug.h>
+#include <cminus/codegen.h>
 
 void do_help( char **argv ){
 	printf( "Usage: %s [-fo file] [-b backend] [-hlp]\n"

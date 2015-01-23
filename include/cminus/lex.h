@@ -5,8 +5,8 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <string.h>
-#include "parse.h"
-#include "error.h"
+#include <cminus/parse.h>
+#include <cminus/error.h>
 
 parse_node_t *get_token( FILE *fp );
 parse_node_t *lex_file( FILE *fp );

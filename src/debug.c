@@ -1,4 +1,4 @@
-#include "debug.h"
+#include <cminus/debug.h>
 
 char *debug_strings[] = {
 	// eof "type"

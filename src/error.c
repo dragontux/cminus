@@ -1,4 +1,4 @@
-#include "error.h"
+#include <cminus/error.h>
 
 void die( int code, char *fmt, ... ){
 	va_list ap;

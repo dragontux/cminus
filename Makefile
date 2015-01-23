@@ -1,17 +1,20 @@
 CC=clang
-CFLAGS=-g -Wall
-
-all: makestuff
-
-OBJS=$(patsubst %.c,%.o,$(wildcard *c))
-
-%.o : %.c
-	$(CC) $(CFLAGS) -c $<
-
-makestuff: $(OBJS)
-	$(CC) $(CFLAGS) -o cminus $(OBJS)
-
-clean:
-	rm *.o cminus
+CFLAGS=-g -Wall -Iinclude
 
 .PHONY: all
+all: tags cminus
+
+SRC=$(wildcard src/*.c)
+OBJS=$(SRC:.c=.o)
+
+%.o : %.c
+	$(CC) $(CFLAGS) -c $< -o $@
+
+tags : $(SRC)
+
+cminus: $(OBJS)
+	$(CC) $(CFLAGS) -o $@ $(OBJS)
+
+.PHONY: clean
+clean:
+	-rm -f src/*.o cminus tags
