@@ -1,21 +1,338 @@
 #include "parse.h"
 
-static rule_t *crules = NULL;
+//static rule_t *crules = NULL;
 extern char *debug_strings[];
 
-rule_t *add_next( rule_t *node, token_type_t type, token_type_t ret ){
-	node->next 		= calloc( 1, sizeof( rule_t ));
-	node->next->type	= type;
-	node->next->ret		= ret;
-	return node->next;
-}
+static rule_t *crules =
+	&(rule_t){
+		.type = T_DECL,
+		.ret  = T_DECL_LIST,
+		.down = &(rule_t){
+			.type = T_DECL_LIST,
+			.ret  = T_DECL_LIST,
+		},
 
-rule_t *add_down( rule_t *node, token_type_t type, token_type_t ret ){
-	node->down		= calloc( 1, sizeof( rule_t ));
-	node->down->type	= type;
-	node->down->ret		= ret;
-	return node->down;
-}
+	.next = &(rule_t){
+		// declaration = var-declaration | func-declaration
+		.type = T_VAR_DECL,
+		.ret  = T_DECL,
+
+	.next = &(rule_t){
+		.type = T_FUN_DECL,
+		.ret  = T_DECL,
+
+	.next = &(rule_t){
+		// param-list = param param-list | param
+		.type = T_PARAM_DECL,
+		.ret  = T_PARAM_DECL_LIST,
+
+		.down = &(rule_t){
+			.type = T_COMMA,
+
+			.down = &(rule_t){
+				.type = T_PARAM_DECL_LIST,
+				.ret  = T_PARAM_DECL_LIST,
+			},
+		},
+	
+	.next = &(rule_t){
+		// compound-stmt = { local-decl statement-list } | { statement-list }
+		.type = T_OPEN_CURL,
+
+		.down = &(rule_t){
+			.type = T_STATEMNT_LIST,
+
+			.down = &(rule_t){
+				.type = T_CLOSE_CURL,
+				.ret  = T_COMP_STATEMNT,
+			},
+
+		.next = &(rule_t){
+			.type = T_DECL_LIST,
+			.down = &(rule_t){
+				.type = T_STATEMNT_LIST,
+
+				.down = &(rule_t){
+					.type = T_CLOSE_CURL,
+					.ret  = T_COMP_STATEMNT,
+				},
+			},
+		}},
+	
+	.next = &(rule_t){
+		// statement-list = statement statemnt-list | statement
+		.type = T_STATEMNT,
+		.ret  = T_STATEMNT_LIST,
+
+		.down = &(rule_t){
+			.type = T_STATEMNT_LIST,
+			.ret  = T_STATEMNT_LIST,
+		},
+
+	// statement = expr-stmt | comp-stmt | select-stmt | iter-stmt | return-stmt
+	.next = &(rule_t){
+		.type = T_EXPR_STATEMNT,
+		.ret  = T_STATEMNT,
+
+	.next = &(rule_t){
+		.type = T_COMP_STATEMNT,
+		.ret  = T_STATEMNT,
+	
+	.next = &(rule_t){
+		.type = T_SELECT_STATEMNT,
+		.ret  = T_STATEMNT,
+	
+	.next = &(rule_t){
+		.type = T_ITER_STATEMNT,
+		.ret  = T_STATEMNT,
+
+	.next = &(rule_t){
+		.type = T_RETURN_STATEMNT,
+		.ret  = T_STATEMNT,
+
+	.next = &(rule_t){
+		// expression-stmt = expression ; | ;
+		.type = T_EXPR,
+		.ret  = T_ARGS_LIST,
+
+		.down = &(rule_t){
+			.type = T_SEMICOL,
+			.ret  = T_EXPR_STATEMNT,
+
+		.next = &(rule_t){
+			.type = T_COMMA,
+
+			.down = &(rule_t){
+				.type = T_ARGS_LIST,
+				.ret  = T_ARGS_LIST,
+			},
+		}},
+
+	.next = &(rule_t){
+		// select-stmt = if ( expression ) statemnt | if ( expression ) statement else statemnt
+		.type = T_IF,
+		.down = &(rule_t){
+
+			.type = T_OPEN_PAREN,
+			.down = &(rule_t){
+
+				.type = T_EXPR,
+				.down = &(rule_t){
+
+					.type = T_CLOSE_PAREN,
+					.down = &(rule_t){
+						
+						.type = T_STATEMNT,
+						.ret  = T_SELECT_STATEMNT,
+
+						.down = &(rule_t){
+							.type = T_ELSE,
+							.down = &(rule_t){
+								.type = T_STATEMNT,
+								.ret  = T_SELECT_STATEMNT,
+							},
+						},
+					},
+				},
+			},
+		},
+
+	.next = &(rule_t){
+		// iter-stmt = while ( expression ) statement
+		.type = T_WHILE,
+		.down = &(rule_t){
+			.type = T_OPEN_PAREN,
+			.down = &(rule_t){
+				.type = T_EXPR,
+				.down = &(rule_t){
+					.type = T_CLOSE_PAREN,
+					.down = &(rule_t){
+						.type = T_STATEMNT,
+						.ret  = T_ITER_STATEMNT,
+					},
+				},
+			},
+		},
+
+	.next = &(rule_t){
+		// return-stmt = return ; | return expression ;
+		.type = T_RETURN,
+		.down = &(rule_t){
+			.type = T_EXPR,
+			.down = &(rule_t){
+				.type = T_SEMICOL,
+				.ret  = T_RETURN_STATEMNT,
+			},
+
+			.next = &(rule_t){
+				.type = T_SEMICOL,
+				.ret  = T_RETURN_STATEMNT,
+			},
+		},
+
+	.next = &(rule_t){
+		// expresson = simple_expr
+		.type = T_SIMPLE_EXPR,
+		.ret  = T_EXPR,
+
+	.next = &(rule_t){
+		// var = id | id [ expression ]
+		.type = T_NAME,
+		.ret  = T_VAR,
+
+		.down = &(rule_t){
+			.type = T_NAME,
+			.ret  = T_PARAM_DECL,
+
+			.down = &(rule_t){
+				.type = T_SEMICOL,
+				.ret  = T_VAR_DECL,
+				
+				.next = &(rule_t){
+					.type = T_OPEN_BRACK,
+					.down = &(rule_t){
+						.type = T_CLOSE_BRACK,
+						.ret  = T_PARAM_DECL,
+					},
+
+				.next = &(rule_t){
+					.type = T_OPEN_PAREN,
+					.down = &(rule_t){
+						.type = T_PARAM_DECL_LIST,
+						.down = &(rule_t){
+							.type = T_CLOSE_PAREN,
+							.down = &(rule_t){
+								.type = T_COMP_STATEMNT,
+								.ret  = T_FUN_DECL,
+							},
+						},
+
+					.next = &(rule_t){
+						.type = T_CLOSE_PAREN,
+						.down = &(rule_t){
+							.type = T_COMP_STATEMNT,
+							.ret  = T_FUN_DECL,
+						},
+					}},
+				}},
+			},
+
+			.next = &(rule_t){
+				.type = T_OPEN_BRACK,
+				.down = &(rule_t){
+					.type = T_EXPR,
+					.down = &(rule_t){
+						.type = T_CLOSE_BRACK,
+						.ret  = T_VAR,
+					},
+				},
+
+			.next = &(rule_t){
+				.type = T_OPEN_PAREN,
+				.down = &(rule_t){
+					.type = T_ARGS_LIST,
+					.down = &(rule_t){
+						.type = T_CLOSE_PAREN,
+						.ret  = T_CALL,
+					},
+
+				.next = &(rule_t){
+					.type = T_CLOSE_PAREN,
+					.ret  = T_CALL,
+				}},
+
+			}},
+		},
+
+	.next = &(rule_t){
+		// relop = < | >
+		.type = T_LESS_THAN,
+		.ret  = T_REL_OP,
+
+	.next = &(rule_t){
+		.type = T_GREATER_THAN,
+		.ret  = T_REL_OP,
+
+	.next = &(rule_t){
+		// add_expr = add_expr addop term | term
+		.type = T_ADD_EXPR,
+		.ret  = T_SIMPLE_EXPR,
+
+		.down = &(rule_t){
+			.type = T_REL_OP,
+			.down = &(rule_t){
+				.type = T_ADD_EXPR,
+				.ret  = T_SIMPLE_EXPR,
+			},
+
+		.next = &(rule_t){
+			.type = T_ADD_OP,
+			.down = &(rule_t){
+				.type = T_TERM,
+				.ret  = T_ADD_EXPR,
+			},
+		}},
+
+	// addop = + | -
+	.next = &(rule_t){
+		.type = T_PLUS,
+		.ret  = T_ADD_OP,
+
+	.next = &(rule_t){
+		.type = T_MINUS,
+		.ret  = T_ADD_OP,
+
+	.next = &(rule_t){
+		.type = T_TERM,
+		.ret  = T_ADD_EXPR,
+
+	.next = &(rule_t){
+		.type = T_FACTOR,
+		.ret  = T_TERM,
+
+		.down = &(rule_t){
+			.type = T_MUL_OP,
+			.down = &(rule_t){
+				.type = T_TERM,
+				.ret  = T_TERM,
+			},
+		},
+
+	// mulop = * | /
+	.next = &(rule_t){
+		.type = T_STAR,
+		.ret  = T_MUL_OP,
+
+	.next = &(rule_t){
+		.type = T_SLASH,
+		.ret  = T_MUL_OP,
+
+	.next = &(rule_t){
+		.type = T_VAR,
+		.ret  = T_FACTOR,
+
+		.down = &(rule_t){
+			.type = T_EQUALS,
+			.down = &(rule_t){
+				.type = T_EXPR,
+				.ret  = T_EXPR,
+			},
+		},
+
+	// factor -> NUM | var | call | string
+	.next = &(rule_t){
+		.type = T_INT,
+		.ret  = T_FACTOR,
+
+	.next = &(rule_t){
+		.type = T_CALL,
+		.ret  = T_FACTOR,
+
+	.next = &(rule_t){
+		.type = T_STRING,
+		.ret  = T_FACTOR,
+
+	}}}}}}}}}}}}}}}}}}}}}}}}}}}}}};
 
 char *type_str( token_type_t type ){
 	return debug_strings[ type ];
@@ -139,8 +456,10 @@ parse_node_t *reduce( parse_node_t *tokens, token_type_t type ){
 parse_node_t *parse_tokens( parse_node_t *tokens ){
 	parse_node_t *ret = NULL;
 
+	/*
 	if ( !crules )
 		crules = gen_cminus_rules( );
+		*/
 
 	//printf( "-=[ Rules dump: \n" );
 	//dump_rules( 0, crules );
@@ -148,6 +467,22 @@ parse_node_t *parse_tokens( parse_node_t *tokens ){
 
 	return ret;
 }
+
+// TODO: these functions are deprecated, remove them if no bugs show up as a result of the rewrite
+rule_t *add_next( rule_t *node, token_type_t type, token_type_t ret ){
+	node->next 		= calloc( 1, sizeof( rule_t ));
+	node->next->type	= type;
+	node->next->ret		= ret;
+	return node->next;
+}
+
+rule_t *add_down( rule_t *node, token_type_t type, token_type_t ret ){
+	node->down		= calloc( 1, sizeof( rule_t ));
+	node->down->type	= type;
+	node->down->ret		= ret;
+	return node->down;
+}
+
 
 // Generates parsing rules for c--
 rule_t *gen_cminus_rules( ){
