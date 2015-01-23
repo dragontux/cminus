@@ -1,0 +1,14 @@
+extern getchar( );
+extern putchar( int n );
+
+int main( int argc ){
+	int i;
+	i = 1;
+
+	while( i ){
+		i = getchar( );
+		putchar( i );
+	}
+	
+	return 0;
+}
