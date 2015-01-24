@@ -267,11 +267,7 @@ unsigned gen_param_decl( parse_node_t *tree, unsigned address, gen_state_t *stat
 
 	state->num_params++;
 
-	//	fprintf( fp, "    ;%4d > \n", address );
-	//fprintf( fp, "    ; parameter \"%s\" of type \"%s\" at [rbp-%u]\n",
-	//tree->down->next->data, tree->down->data, state->num_params * 8 );
-
-	address = gen_code( tree->next, address + 1, state, fp );// + 1;
+	address = gen_code( tree->next, address + 1, state, fp );
 
 	return address;
 }
@@ -314,8 +310,7 @@ unsigned gen_assignment_expression(
 {
 	unsigned op;
 
-	// TODO: Make sure that tree->down->data is actually a name symbol,
-	//       just in case
+	// TODO: Make sure that tree->down->data is actually a name symbol, just in case
 	name_decl_t *name = find_name( tree->down->data, state );
 
 	if ( name ){
@@ -338,9 +333,6 @@ unsigned gen_assignment_expression(
 			default:
 				break;
 		}
-
-		//fprintf( fp, "    ;%4d > \n", address );
-		//fprintf( fp, "    ; End of expression, op are %u\n", op );
 	}
 
 	return address;
@@ -348,9 +340,6 @@ unsigned gen_assignment_expression(
 
 unsigned gen_expression( parse_node_t *tree, unsigned address, gen_state_t *state, FILE *fp ){
 	unsigned op1, op2;
-
-	//fprintf( fp, "    ;%4d > \n", address );
-	//fprintf( fp, "    ; Have expression, operation is %s\n", type_str( tree->down->next->type ));
 
 	if ( tree->down->next->type == T_EQUALS ){
 		address = gen_assignment_expression( tree, address + 1, state, fp );
@@ -418,9 +407,6 @@ unsigned gen_expression( parse_node_t *tree, unsigned address, gen_state_t *stat
 			default:
 				break;
 		}
-
-		//fprintf( fp, "    ;%4d > \n", address );
-		//fprintf( fp, "    ; End of expression, ops are %u and %u\n", op1, op2 );
 	}
 
 	return address;
@@ -461,9 +447,6 @@ unsigned gen_return( parse_node_t *tree, unsigned address, gen_state_t *state, F
 
 	return_addr = gen_code( tree->down->next, address + 1, state, fp );
 	address = return_addr + 1;
-
-	//	fprintf( fp, "    ;%4d > \n", address );
-	//fprintf( fp, "    ; Have return statement, return value at %u\n", return_addr );
 
 	fprintf( fp, "    jmp .function_end\n" );
 
@@ -521,7 +504,6 @@ unsigned gen_name( parse_node_t *tree, unsigned address, gen_state_t *state, FIL
 				break;
 
 			case VAR_PLACE_PARAMETER:
-				//fprintf( fp, "    mov rax, [rbp+%u]\n", (name->number + 1) * 8 );
 				fprintf( fp, "    mov rax, %s\n",
 						(char *[]){ "rdi", "rsi", "rdx", "rcx", "r8", "r9" }[ name->number ]);
 				break;
@@ -548,10 +530,9 @@ unsigned gen_int( parse_node_t *tree, unsigned address, gen_state_t *state, FILE
 }
 
 unsigned gen_basic_datatype( parse_node_t *tree, unsigned address, gen_state_t *state, FILE *fp ){
-	/* TODO: handle stuff here
+	// TODO: handle stuff here
 	printf( "    ;%4d > \n", address );
 	printf( "    ; Have basic datatype \"%s\"\n", type_str( tree->type ));
-	*/
 
 	return address;
 }
@@ -627,8 +608,7 @@ unsigned gen_code( parse_node_t *tree, unsigned address, gen_state_t *state, FIL
 				break;
 
 			default:
-//				fprintf( fp, "    ;%4d > \n", address );
-				fprintf( fp, "    ; Skipping type \"%s\"...\n", type_str( tree->type ));
+				fprintf( stderr, "Warning: Skipping type \"%s\"...\n", type_str( tree->type ));
 				break;
 		}
 	}
