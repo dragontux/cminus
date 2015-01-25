@@ -89,12 +89,21 @@ typedef struct name_decl {
 	struct name_decl *next;
 } name_decl_t;
 
+typedef struct string_decl {
+	unsigned address;
+	char *data;
+
+	struct string_decl *next;
+} string_decl_t;
+
 typedef struct gen_state {
 	unsigned flags;
 	unsigned num_params;
 	unsigned num_vars;
 	struct gen_state *last;
 	struct name_decl *namelist;
+
+	struct string_decl *strings;
 } gen_state_t;
 
 name_decl_t *find_name_no_recurse( char *name, gen_state_t *state ){
@@ -204,6 +213,7 @@ unsigned gen_func_decl( parse_node_t *tree, unsigned address, gen_state_t *state
 		.last = state,
 		.num_params = 0,
 		.flags = STATE_IN_FUNCTION,
+		.strings = NULL,
 	};
 
 	name_decl_t *new_name = calloc( 1, sizeof( name_decl_t ));
@@ -244,6 +254,22 @@ unsigned gen_func_decl( parse_node_t *tree, unsigned address, gen_state_t *state
 	}
 
 	address = gen_code( tree->next, address + 1, state, fp );
+
+	// Generate string constants, if any were made inside the function
+	if ( newscope.strings ){
+		string_decl_t *temp = newscope.strings;
+		string_decl_t *freeme;
+
+		while ( temp ){
+			fprintf( fp, "section .rodata\n" );
+			fprintf( fp, "string_%u: db \"%s\", 0x0\n", temp->address, temp->data );
+
+			freeme = temp;
+			temp = temp->next;
+
+			free( freeme );
+		}
+	}
 
 	return address;
 }
@@ -383,19 +409,10 @@ unsigned gen_expression( parse_node_t *tree, unsigned address, gen_state_t *stat
 
 			// TODO: find more efficient way to do comparisons
 			case T_LESS_THAN:
-				fprintf( fp, "    cmp rbx, rax\n" );
-				fprintf( fp, "    jge .cmp_false_%u\n", address );
-				fprintf( fp, "    mov rax, 1\n" );
-				fprintf( fp, "    jmp .cmp_end_%u\n", address );
-				fprintf( fp, ".cmp_false_%u:\n", address );
-				fprintf( fp, "    mov rax, 0\n" );
-				fprintf( fp, ".cmp_end_%u:\n", address );
-				address++;
-				break;
-
 			case T_GREATER_THAN:
 				fprintf( fp, "    cmp rbx, rax\n" );
-				fprintf( fp, "    jle .cmp_false_%u\n", address );
+				fprintf( fp, "    j%ce .cmp_false_%u\n",
+						(tree->down->next->type == T_LESS_THAN)? 'g' : 'l', address );
 				fprintf( fp, "    mov rax, 1\n" );
 				fprintf( fp, "    jmp .cmp_end_%u\n", address );
 				fprintf( fp, ".cmp_false_%u:\n", address );
@@ -529,6 +546,21 @@ unsigned gen_int( parse_node_t *tree, unsigned address, gen_state_t *state, FILE
 	return address;
 }
 
+unsigned gen_string( parse_node_t *tree, unsigned address, gen_state_t *state, FILE *fp ){
+	string_decl_t *newstring = calloc( 1, sizeof( string_decl_t ));
+
+	fprintf( fp, "    mov rax, string_%u\n", address );
+
+	newstring->data = tree->data;
+	newstring->address = address;
+	newstring->next = state->strings;
+	state->strings = newstring;
+
+	address++;
+
+	return address;
+}
+
 unsigned gen_basic_datatype( parse_node_t *tree, unsigned address, gen_state_t *state, FILE *fp ){
 	// TODO: handle stuff here
 	printf( "    ;%4d > \n", address );
@@ -598,6 +630,9 @@ unsigned gen_code( parse_node_t *tree, unsigned address, gen_state_t *state, FIL
 				break;
 
 			case T_STRING:
+				address = gen_string( tree, address, state, fp );
+				break;
+
 			case T_CHAR:
 			case T_DOUBLE:
 				address = gen_basic_datatype( tree, address, state, fp );

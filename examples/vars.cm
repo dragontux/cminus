@@ -2,6 +2,8 @@ int globe;
 int n;
 extern getchar( );
 extern putchar( int n );
+extern puts( char str[] );
+extern write( int fd, char str[], int count );
 
 int add( int a, int b ){
 	return a + b;
@@ -21,8 +23,7 @@ int sub( int a, int b ){
 }
 
 int fact( int n ){
-	putchar( 70 );
-	putchar( 10 );
+	puts( "factorial thing" );
 
 	if ( n ) return fact( n - 1 ) * n;
 	else     return 1;
@@ -37,11 +38,14 @@ int bar( int n ){
 int meh( ){
 	int i;
 
+	puts( "test" );
+	write( 1, "blarg", 5 );
+	puts( "" );
+
 	i = 0;
 
 	while ( i < 10 ){
-		putchar( 109 );
-		putchar( 10 );
+		puts( "This is the meh() function" );
 
 		i = i + 1;
 	}
@@ -56,8 +60,8 @@ int main( int argc ){
 	foo = 2 - 2;
 	i = meh( 0 );
 
-	if ( 1 ){
-		putchar( getchar( ));
+	if ( getchar( ) < 91 ){
+		puts( "Hi this is the main function" );
 
 	} else {
 		bar( 2 );
