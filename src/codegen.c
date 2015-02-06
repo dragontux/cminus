@@ -407,17 +407,13 @@ unsigned gen_expression( parse_node_t *tree, unsigned address, gen_state_t *stat
 				address++;
 				break;
 
-			// TODO: find more efficient way to do comparisons
 			case T_LESS_THAN:
 			case T_GREATER_THAN:
+				fprintf( fp, "    mov rcx, 1\n" );
 				fprintf( fp, "    cmp rbx, rax\n" );
-				fprintf( fp, "    j%ce .cmp_false_%u\n",
-						(tree->down->next->type == T_LESS_THAN)? 'g' : 'l', address );
-				fprintf( fp, "    mov rax, 1\n" );
-				fprintf( fp, "    jmp .cmp_end_%u\n", address );
-				fprintf( fp, ".cmp_false_%u:\n", address );
 				fprintf( fp, "    mov rax, 0\n" );
-				fprintf( fp, ".cmp_end_%u:\n", address );
+				fprintf( fp, "    cmov%c rax, rcx ; comparison at %u\n",
+						(tree->down->next->type == T_LESS_THAN)? 'l' : 'g', address );
 				address++;
 				break;
 
